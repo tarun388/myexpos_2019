@@ -1,0 +1,53 @@
+//CUR PROCS ID
+alias cur_pid R0;
+cur_pid = [SYSTEM_STATUS_TABLE + 1];
+
+//PUSH BP ONTO KERNEL STACK
+multipush (BP);
+
+alias cur_procs_table R1;
+cur_procs_table = PROCESS_TABLE + cur_pid*16 ;
+
+//save the KPTR, PTBR, PTLR
+[cur_procs_table + 12] = SP % 512;
+[cur_procs_table + 14] = PTBR;
+[cur_procs_table + 15] = PTLR;
+
+alias new_pid R2;
+new_pid = 0;	//DEFAULT PID TO 0
+
+alias temp_pid R3;
+temp_pid = cur_pid + 1;
+alias temp_mode R4;
+
+//schedule the process starting from cur_pid + 1
+while(temp_pid < 16) do
+	temp_mode = [PROCESS_TABLE + temp_pid*16 + 4]; 
+	if( (temp_mode == READY) || (temp_mode == CREATED) ) then
+		new_pid = temp_pid;
+		break;
+	endif;	
+endwhile; 
+
+//update PTBR,PTLR,PID
+SP = [PROCESS_TABLE + new_pid*16 + 11] * 512 + [PROCESS_TABLE + new_pid*16 + 12];
+PTBR = [PROCESS_TABLE + new_pid*16 + 14];
+PTLR = [PROCESS_TABLE + new_pid*16 + 15];
+[SYSTEM_STATUS_TABLE + 1] = new_pid;
+
+//if CREATED, change state to running and SP to UASP then return back to user process
+if( [PROCESS_TABLE + new_pid*16 + 4] == CREATED) then
+	SP = [PROCESS_TABLE + new_pid*16 + 13];
+	[PROCESS_TABLE + new_pid*16 + 4] = RUNNING;
+	[PROCESS_TABLE + new_pid*16 + 9] = 0;
+	ireturn;
+endif;
+
+//change the state of process to RUNNING
+[PROCESS_TABLE + new_pid*16 + 4] = RUNNING;
+
+//restore BP
+multipop(BP);
+
+return;
+
