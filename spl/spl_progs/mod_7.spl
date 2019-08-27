@@ -67,7 +67,7 @@ PTLR = 10;
 
 //STAGE 14
 
-//LOAD EXECUTABLE FILE
+//LOAD EXECUTABLE FILE 3rd procs
 loadi(83,69);
 
 PTBR = PTBR + 20;
@@ -111,6 +111,50 @@ PTLR = 10;
 
 [86*512] = [83*512 + 1];		//ENTRY POINT
 
+//LOAD EXECUTABLE FILE 4th procs
+loadi(89,70);
+
+PTBR = PTBR + 20;
+PTLR = 10;
+
+//LIBRARY
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+//HEAP
+[PTBR+4] = 90;
+[PTBR+5] = "0110";
+[PTBR+6] = 91;
+[PTBR+7] = "0110";
+
+//CODE
+[PTBR+8] = 89;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0000";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//STACK
+[PTBR+16] = 92;
+[PTBR+17] = "0110";
+[PTBR+18] = 93;
+[PTBR+19] = "0110";
+
+[PROCESS_TABLE + 16*3 + 1] = 3;		//PID
+[PROCESS_TABLE + 16*3 + 4] = CREATED;	//STATE
+[PROCESS_TABLE + 16*3 + 11] = 94;	//UAPN
+[PROCESS_TABLE + 16*3 + 12] = 0;	//KASP
+[PROCESS_TABLE + 16*3 + 13] = 8*512;	//UASP
+[PROCESS_TABLE + 16*3 + 14] = PTBR;	//PTBR
+[PROCESS_TABLE + 16*3 + 15] = PTLR; 	//PTLR
+
+[92*512] = [89*512 + 1];		//ENTRY POINT
+
 //SCHEDULER MODULE 7
 loadi(50,63);
 loadi(51,64);
@@ -118,7 +162,7 @@ loadi(51,64);
 //INITIALIZE STATE FIELD TO TERMINATED OF REMAINING PROCESS
 alias p_num R0;
 alias addrs_state_procs R1;
-p_num = 3;
+p_num = 4;
 while (p_num < 16) do
 	addrs_state_procs = PROCESS_TABLE + 16*p_num + 4;
 	[addrs_state_procs] = TERMINATED;
