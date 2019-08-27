@@ -26,7 +26,8 @@ while(temp_pid < 16) do
 	if( (temp_mode == READY) || (temp_mode == CREATED) ) then
 		new_pid = temp_pid;
 		break;
-	endif;	
+	endif;
+	temp_pid = temp_pid + 1;	
 endwhile; 
 
 //update PTBR,PTLR,PID
