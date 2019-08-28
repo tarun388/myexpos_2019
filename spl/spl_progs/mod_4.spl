@@ -1,0 +1,34 @@
+//---------------------modification in STAGE 14-------------------------------
+
+alias functionNum R1;
+alias currentPID R2;
+
+if (functionNum == 3) then
+	multipush (R1, R2);
+
+	functionNum = 8;			//function number for Acquire Terminal is '8'
+
+	currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+	call MOD_0;
+
+	multipop (R1, R2);
+
+	alias word_to_be_printed R3;
+	print (word_to_be_printed);		
+
+	multipush (R1, R2);
+
+	functionNum = 9;			//function number for release Terminal is '9'
+
+	currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+	multipop (R1, R2);	
+
+	return;
+	
+else
+	return;
+endif;
+
+//---------------------modification uptil STAGE 14-------------------------

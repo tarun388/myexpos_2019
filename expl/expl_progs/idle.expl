@@ -4,7 +4,7 @@ int main()
 		int a;
 	enddecl
 	begin
-		breakpoint;
+		//breakpoint;
 		while(1 == 1) do
 			a = 1;
 		endwhile;

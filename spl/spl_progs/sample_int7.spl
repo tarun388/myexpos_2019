@@ -30,7 +30,25 @@ then
 else
 	alias word R5;
 	word = [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
-	print word;
+
+//-----------------------------modification in STAGE 15---------------------------
+	
+	multipush(R0, R1, R2, R3, R4 ,R5);
+
+	alias Terminal_write_fn R1;
+	Terminal_write_fn = 3;				//Function number for terminal write is '3' passed through reg1
+
+	alias cur_PID R2;
+	cur_PID = [SYSTEM_STATUS_TABLE + 1];		//PID of the current process in reg2
+
+	alias word_to_print R3;
+	word_to_print = word;				//word to be printed to the terminal in reg3
+
+	call MOD_4;	
+
+	multipop (R0, R1, R2, R3, R4, R5);
+
+//--------------------------modification uptil STAGE 15----------------------------
 
 	alias physicalAddrRetVal R6;
 	physicalAddrRetVal = ([PTBR + 2 * (userSP - 1) / 512] * 512) + ((userSP - 1) % 512);

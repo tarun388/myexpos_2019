@@ -1,0 +1,65 @@
+//---------------------------------------modification in STAGE 14------------------------------------------------------------------
+
+alias functionNum R1;
+alias currentPID R2;
+alias retval R0;
+
+if (functionNum == 8) then
+//Acquire Terminal
+
+	multipush (R1, R2);
+
+	currentPID = [SYSTEM_STATUS_TABLE + 1];	
+
+	while ([TERMINAL_STATUS_TABLE + 0] == 1) do
+		[PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;		//change the state of the current process in its process table entry to WAIT_TERMINAL
+		multipush (R1, R2);
+
+		call MOD_5;
+
+		multipop (R1, R2);
+
+		[TERMINAL_STATUS_TABLE + 0] = 1;			//status field to 1
+		[TERMINAL_STATUS_TABLE + 1] = [SYSTEM_STATUS_TABLE + 1];
+	
+	endwhile;
+
+	multipop (R1, R2);
+	
+	return;	
+
+endif;
+ 
+if(functionNum == 9) then
+//Release Terminal
+
+	if ([TERMINAL_STATUS_TABLE + 0] != [SYSTEM_STATUS_TABLE + 1]) then 
+		
+		retval = -1;
+		return;
+
+	endif;	
+
+	[TERMINAL_STATUS_TABLE + 0] = 0;
+	
+	multipush (R1, R2);
+
+	alias pid R1;
+	pid = 1;
+
+	while ([PROCESS_TABLE + pid*16 + 4] == WAIT_TERMINAL) do
+		[PROCESS_TABLE + pid*16 + 4] = READY;
+		pid = pid + 1;
+	endwhile;
+
+	retval = 0;
+
+	multipop (R1, R2);
+	
+	return;
+
+else
+	return;
+endif;
+
+//---------------------------------------modification uptil STAGE 14---------------------------------------------------------------

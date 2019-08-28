@@ -169,5 +169,19 @@ while (p_num < 16) do
 	p_num = p_num + 1;
 endwhile;
 
+//------------------------------modification in STAGE 15-------------------------------------------------------------------
+
+//LOAD MODULE 0
+loadi(40,53);
+loadi(41,54);
+
+//LOAD MODULE 4
+loadi(48,61);
+loadi(49,62);
+
+[TERMINAL_STATUS_TABLE + 0] = 0;
+
+//-------------------------------modification uptil STAGE 15--------------------------------------------------------------
+
 return;
 
