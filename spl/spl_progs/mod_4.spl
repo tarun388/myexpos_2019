@@ -23,6 +23,8 @@ if (functionNum == 3) then
 
 	currentPID = [SYSTEM_STATUS_TABLE + 1];
 
+	call MOD_0;
+
 	multipop (R1, R2);	
 
 	return;

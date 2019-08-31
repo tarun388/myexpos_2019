@@ -19,12 +19,18 @@ if (functionNum == 8) then
 
 		multipop (R1, R2);
 
+	endwhile;
+
+	breakpoint;
+
 		[TERMINAL_STATUS_TABLE + 0] = 1;			//status field to 1
 		[TERMINAL_STATUS_TABLE + 1] = [SYSTEM_STATUS_TABLE + 1];
 	
-	endwhile;
+	//endwhile;
 
 	multipop (R1, R2);
+
+	//breakpoint;
 	
 	return;	
 
@@ -33,7 +39,7 @@ endif;
 if(functionNum == 9) then
 //Release Terminal
 
-	if ([TERMINAL_STATUS_TABLE + 0] != [SYSTEM_STATUS_TABLE + 1]) then 
+	if ([TERMINAL_STATUS_TABLE + 1] != [SYSTEM_STATUS_TABLE + 1]) then 
 		
 		retval = -1;
 		return;
@@ -42,20 +48,24 @@ if(functionNum == 9) then
 
 	[TERMINAL_STATUS_TABLE + 0] = 0;
 	
-	multipush (R1, R2);
+	multipush (R1);
 
-	alias pid R1;
-	pid = 1;
+	alias tempid R1;
+	tempid = 0;
 
-	while ([PROCESS_TABLE + pid*16 + 4] == WAIT_TERMINAL) do
-		[PROCESS_TABLE + pid*16 + 4] = READY;
-		pid = pid + 1;
+	while (tempid < 16) do
+		if ([PROCESS_TABLE + tempid*16 + 4] == WAIT_TERMINAL) then
+			[PROCESS_TABLE + tempid*16 + 4] = READY;
+		endif;
+		tempid = tempid + 1;
 	endwhile;
 
 	retval = 0;
 
-	multipop (R1, R2);
+	multipop (R1);
 	
+	//breakpoint;
+
 	return;
 
 else
