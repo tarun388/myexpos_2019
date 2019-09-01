@@ -1,0 +1,46 @@
+decl
+	int gcd(int x,int y);
+enddecl
+
+int gcd(int x, int y){
+	decl
+		int mod,g;
+	enddecl
+	
+	begin
+		if (y == 0) then
+			g = x;
+		else
+			mod = x % y;
+			g = gcd(y,mod);
+		endif;
+
+		return g;
+	end
+}
+
+int main(){
+decl
+	int a,b,ans,temp;
+	str mystr;
+enddecl
+
+begin
+	mystr = "Enter first number";
+	temp = exposcall("Write",-2,mystr);
+	temp = exposcall("Read",-1,a);
+	mystr = "Enter second number";
+	temp = exposcall("Write",-2,mystr);
+	temp = exposcall("Read",-1,b);
+	
+	if (a < b) then
+		ans = gcd(b,a);
+	else
+		ans = gcd(a,b);
+	endif;
+
+	write (ans);
+
+	return 0;
+end
+}

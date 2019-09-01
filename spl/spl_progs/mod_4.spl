@@ -1,10 +1,10 @@
-//---------------------modification in STAGE 14-------------------------------
+//---------------------modification in STAGE 15-------------------------------
 
 alias functionNum R1;
 alias currentPID R2;
 
-if (functionNum == 3) then
-	multipush (R1, R2);
+if (functionNum == TERMINAL_WRITE) then
+	backup;
 
 	functionNum = 8;			//function number for Acquire Terminal is '8'
 
@@ -12,25 +12,56 @@ if (functionNum == 3) then
 
 	call MOD_0;
 
-	multipop (R1, R2);
+	restore;
 
 	alias word_to_be_printed R3;
 	print (word_to_be_printed);		
 
-	multipush (R1, R2);
+	backup;
 
 	functionNum = 9;			//function number for release Terminal is '9'
-
 	currentPID = [SYSTEM_STATUS_TABLE + 1];
 
 	call MOD_0;
 
-	multipop (R1, R2);	
+	restore;	
 
 	return;
-	
-else
-	return;
+
 endif;
 
-//---------------------modification uptil STAGE 14-------------------------
+//---------------------modification uptil STAGE 15-------------------------
+
+//--------------------modification in STAGE 16----------------------------
+
+if (functionNum == TERMINAL_READ) then
+
+	backup;
+
+	R1 = ACQUIRE_TERMINAL;					//Acquire Terminal----> 8
+	R2 = [SYSTEM_STATUS_TABLE + 1];		//Current PID
+
+	call MOD_0;
+
+	restore;
+
+	read;					//read instruction
+
+	//state of the current process to WAIT_TERMINAL
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 4] = WAIT_TERMINAL;
+
+	backup;
+
+	call MOD_5;	
+	
+	restore;
+
+	alias phy_word_addr R4;
+	phy_word_addr = [PTBR + ((R3)/512)*2]*512 + (R3) % 512;
+	[phy_word_addr] = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 8];
+
+	return;
+
+endif;
+
+//----------------------modification uptil STAGE 16----------------------

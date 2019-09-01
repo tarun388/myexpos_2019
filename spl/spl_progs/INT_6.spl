@@ -1,0 +1,50 @@
+//--------------------modification in STAGE 16------------------------------
+
+//MODE Flag of Current Process
+//set to 7
+//for read system call
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 7;
+
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11] * 512 - 1;
+
+
+
+alias filedescriptor R1;
+filedescriptor = [ [PTBR + ((userSP-4)/512)*2]*512 + (userSP-4)%512 ];
+
+if (filedescriptor != -1) then
+
+	alias addrretval R2;
+	addrretval = [PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512;
+	[addrretval] = -1;
+else
+	
+	backup;
+	R3 = [ [PTBR + ((userSP-3)/512)*2]*512 + (userSP-3)%512 ];
+	R1 = 4;		//TERMINAL READ function number--> 4
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+
+	call MOD_4;
+
+	restore;
+
+	alias addrretval R2;
+	addrretval = [PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512;
+	[addrretval] = 0;
+
+endif;		
+
+
+//Reset MODE FLAG to 0
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 0;
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13];
+
+ireturn;
+//--------------------modification uptil STAGE 16----------------------------

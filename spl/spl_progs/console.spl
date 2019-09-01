@@ -1,0 +1,39 @@
+//---------------------------modification in STAGE 16-------------------------
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11] * 512 - 1;
+
+
+
+backup;				//backup the user context
+
+
+
+alias reqPID R2;
+reqPID = [TERMINAL_STATUS_TABLE + 1];
+
+[PROCESS_TABLE + reqPID*16 + 8] = P0;
+
+//----------------
+backup;
+
+R1 = 9;
+R2 = reqPID;
+call MOD_0;			//Invoke RESOURCE MODULE
+
+restore;
+//---------------
+
+
+
+restore;			//restore the user context
+
+
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13];
+
+
+ireturn;
+
+//-------------------------modification uptil STAGE 16------------------------
