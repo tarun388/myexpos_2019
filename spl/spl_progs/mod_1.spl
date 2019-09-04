@@ -1,0 +1,70 @@
+//------------------------------PROCESS MANAGER MODULE-----------------------------
+//-----------------------------MODULE 1----------------------------------------------
+
+alias functionNum R1;
+alias exitPID R2;
+
+if (functionNum == FREE_USER_AREA_PAGE) then
+
+	alias UAPN R3;
+	UAPN = [PROCESS_TABLE + exitPID * 16 + 11];
+	backup;
+	R1 = RELEASE_PAGE;
+	R2 = UAPN;
+	call MOD_2;
+	restore;	
+	return;
+
+endif;
+
+if (functionNum == EXIT_PROCESS) then 
+
+	backup;
+	R1 = FREE_PAGE_TABLE;
+	R2 = exitPID;
+	call MOD_1;
+restore;
+
+	backup;
+	R1 = FREE_USER_AREA_PAGE;
+	R2 = exitPID;
+	call MOD_1;
+	restore;
+
+	[PROCESS_TABLE + exitPID * 16 + 4] = TERMINATED;
+
+	return;
+
+endif;
+
+if  (functionNum == FREE_PAGE_TABLE) then
+
+	//invalidate the page table entries for the library
+	[PTBR + 0] = -1;
+	[PTBR + 1] = "0000";
+	[PTBR + 2] = -1;
+	[PTBR + 3] = "0000";
+
+	//release the page for each valid page table entry in the page table, and invalidate the entry
+	alias i R3;
+	i = 4;
+	while (i <= 18) do
+
+		if ([PTBR + i] != -1) then
+		
+			backup;
+			R1 = RELEASE_PAGE;
+			R2 = [PTBR + i];
+			call MOD_2;
+			restore;
+			[PTBR + i] = -1;
+			[PTBR + i + 1] = "0000";
+
+		endif;
+		i = i + 2;	
+
+	endwhile;
+
+	return;
+
+endif;

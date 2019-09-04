@@ -6,7 +6,6 @@ enddecl
 begin
 	num = 1;
 	while ( num < 100 ) do
-		breakpoint;
 		temp = exposcall ( "Write", -2, num);
 		num = num + 2;
 	endwhile;

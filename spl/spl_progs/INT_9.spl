@@ -1,0 +1,157 @@
+//----------------------------------INTERRUPT 9--------------------------------
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+
+alias userSP R0;
+userSP = SP;
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11] * 512 - 1;
+
+//MODE FLAG--->9 exec syscall
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 9;
+
+alias filename R1;
+filename = [ [PTBR + 2 * (userSP-4) / 512] * 512 + (userSP-4) % 512 ];
+
+alias i R2;
+i = 1;
+
+//search the copy of inode table for the file 
+while (i < MAX_FILE_NUM) do
+
+	if ( [INODE_TABLE + (i * 16) + 1] == filename && [INODE_TABLE + (i * 16)] == EXEC ) then
+		break;
+	endif;
+	i = i + 1;
+
+endwhile; 
+
+alias retvaladdr R3;
+retvaladdr = [PTBR + 2*((userSP-1)/512)]*512 + ((userSP-1)%512);
+
+if (i >= MAX_FILE_NUM) then
+	
+	//FILE NOT FOUND
+	[retvaladdr] = -1;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;		//MODE FLAG-->0
+	SP = userSP;
+	ireturn;
+
+endif;
+
+
+//deallocate resources and pages of current process
+backup;
+R1 = EXIT_PROCESS;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call MOD_1;				//call exit function in process manager module
+restore;	
+
+alias UAPN R4;
+UAPN = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11];
+
+//increment memory free list corresponding to user area page
+[MEMORY_FREE_LIST + UAPN] = [MEMORY_FREE_LIST + UAPN] + 1;
+
+//decrement MEM_FREE_COUNT
+[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+
+//initialize SP to kernel stack of new process
+SP = UAPN * 512 - 1;
+
+//state of the new process---> RUNNING
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 4] = RUNNING;
+
+//inode index field 
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 7] = i;
+
+//-------------PAGE TABLE SETUP------------
+
+PTBR = PAGE_TABLE_BASE + [SYSTEM_STATUS_TABLE + 1] * 20;
+
+//set the library
+[PTBR + 0] = 63;
+[PTBR + 1] = "0100";
+[PTBR + 2] = 64;
+[PTBR + 3] = "0100";
+
+//----STACK 1--------
+backup;
+R1 = GET_FREE_PAGE;
+call MOD_2;
+[PTBR + 16] = R0;
+[PTBR + 17] = "0110";
+restore;
+
+//----STACK 2--------
+backup;
+R1 = GET_FREE_PAGE;
+call MOD_2;
+[PTBR + 18] = R0;
+[PTBR + 19] = "0110";
+restore;
+
+//----HEAP 1---------
+backup;
+R1 = GET_FREE_PAGE;
+call MOD_2;
+[PTBR + 4] = R0;
+[PTBR + 5] = "0110";
+restore;
+
+//----HEAP 2---------
+backup;
+R1 = GET_FREE_PAGE;
+call MOD_2;
+[PTBR + 6] = R0;
+[PTBR + 7] = "0110";
+restore;
+
+//-----------validate code entries---------
+if ([INODE_TABLE + i*16 + 8] != -1) then 
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[PTBR + 8] = R0;
+	[PTBR + 9] = "0100";
+	loadi(R0,[INODE_TABLE + i*16 + 8]);				//load code from disk
+	restore;
+endif;
+
+if ([INODE_TABLE + i*16 + 9]  != -1) then
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[PTBR + 10] = R0;
+	[PTBR + 11] = "0100";
+	loadi(R0,[INODE_TABLE + i*16 + 9]);				//load code from disk
+	restore;
+endif; 
+
+if ([INODE_TABLE + i*16 + 10] != -1) then
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[PTBR + 12] = R0;
+	[PTBR + 13] = "0100";
+	loadi(R0,[INODE_TABLE + i*16 + 10]);				//load code from disk
+	restore;
+endif;
+
+if ([INODE_TABLE + i*16 + 11] != -1) then
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[PTBR + 14] = R0;
+	[PTBR + 15] = "0100";
+	loadi(R0,[INODE_TABLE + i*16 + 11]);				//load code from disk
+	restore;
+endif;
+
+[[PTBR + 16] * 512] = [[PTBR + 8] * 512 + 1];		//ENTRY POINT
+
+SP = 8 * 512;
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 0;
+
+ireturn;

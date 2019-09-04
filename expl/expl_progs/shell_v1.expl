@@ -1,0 +1,20 @@
+int main(){
+decl
+	int tmp;
+	str mystr,fname;
+enddecl
+	
+begin
+	mystr = "Enter FileName";
+	tmp = exposcall("Write",-2,mystr);
+	tmp = exposcall("Read",-1,fname);
+	tmp = exposcall("Exec",fname);
+	if (tmp == -1) then
+
+		mystr = "FILE NOT FOUND";
+		tmp = exposcall("Write",-2,mystr);
+
+	endif;
+	return 0;
+end
+}

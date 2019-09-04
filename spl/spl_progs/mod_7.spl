@@ -1,8 +1,61 @@
-//TIMER
+//----------------------------BOOT MODULE-------------------------------------------
+//--------------------------MODULE 7--------------------------------------------------
+
+//-------------------------loading from DISK---------------------
+
+//Exception Handler
+loadi(2,15);
+loadi(3,14);
+
+//Timer Interrupt Handler
 loadi(4,17);
 loadi(5,18);
 
-//LIBRARY
+//Console Interrupt Handler
+loadi(8,21);
+loadi(9,22);
+
+//Interrupt 6 Routine : Read
+loadi(14,27);
+loadi(15,28);
+
+//Interrupt 7 Routine : Write
+loadi(16,29);
+loadi(17,30);
+
+//Interrupt 9 Routine : Exec
+loadi(20,33);
+loadi(21,34);
+
+//Interrupt 10 Routine : Exit
+loadi(22,35);
+loadi(23,36);
+
+//Module 0 : Resource Manager
+loadi(40,53);
+loadi(41,54);
+
+//Module 1 : Process Manager
+loadi(42,55);
+loadi(43,56);
+
+//Module 2 : Memory Manager
+loadi(44,57);
+loadi(45,58);
+
+//Module 4 : Device Manager
+loadi(48,61);
+loadi(49,62);
+
+//Module 5 : Context Switch Module (Scheduler Module)
+loadi(50,63);
+loadi(51,64);
+
+//Inode Table
+loadi(59,3);
+loadi(60,4);
+
+//Expos Library
 loadi(63,13);
 loadi(64,14);
 
@@ -10,22 +63,27 @@ loadi(64,14);
 loadi(65,7);
 loadi(66,8);
 
-//INT 7
-loadi(16,29);
-loadi(17,30);
+//--------------------------------------------------------------------
 
-//INT 10
-loadi(22,35);
-loadi(23,26);
+//------INITIALIZE STATE FIELD TO TERMINATED OF REMAINING PROCESS----------
+alias p_num R0;
+alias addrs_state_procs R1;
+p_num = 1;
 
-//EXCEPTION HANDLER
-loadi(2,15);
-loadi(3,14);
+while (p_num < 16) do
+
+	addrs_state_procs = PROCESS_TABLE + 16*p_num + 4;
+	[addrs_state_procs] = TERMINATED;
+	p_num = p_num + 1;
+
+endwhile;
+
+//--------------------------------------------------------------------------
+
+//---------------------Initialising INIT------------------------
 
 PTBR = PAGE_TABLE_BASE + 20;
 PTLR = 10;
-
-//INIT
 
 //LIBRARY
 [PTBR+0] = 63;
@@ -65,139 +123,39 @@ PTLR = 10;
 
 [76*512] = [65*512+1];		//ENTRY POINT
 
-//------------------------------STAGE 14------------------------------------
+//------------------------------------------------------------------------
 
 
-//-------------------------commented-----------------------//
-//LOAD EXECUTABLE FILE 3rd procs
-//loadi(83,69);
+//------------------updating MEMORY_FREE_LIST-----------------------------
 
-//PTBR = PTBR + 20;
-//PTLR = 10;
+alias i R0;
+i = 0;
+while (i < MAX_MEM_PAGE) do
 
-//LIBRARY
-//[PTBR+0] = 63;
-//[PTBR+1] = "0100";
-//[PTBR+2] = 64;
-//[PTBR+3] = "0100";
+	if (i < 83) then
+	
+		[MEMORY_FREE_LIST + i] = 1;
 
-//HEAP
-//[PTBR+4] = 84;
-//[PTBR+5] = "0110";
-//[PTBR+6] = 85;
-//[PTBR+7] = "0110";
+	else 
 
-//CODE
-//[PTBR+8] = 83;
-//[PTBR+9] = "0100";
-//[PTBR+10] = -1;
-//[PTBR+11] = "0000";
-//[PTBR+12] = -1;
-//[PTBR+13] = "0000";
-//[PTBR+14] = -1;
-//[PTBR+15] = "0000";
+		[MEMORY_FREE_LIST + i] = 0;
 
-//STACK
-//[PTBR+16] = 86;
-//[PTBR+17] = "0110";
-//[PTBR+18] = 87;
-//[PTBR+19] = "0110";
+	endif;
+	i = i + 1;
 
-//[PROCESS_TABLE + 16*2 + 1] = 2;		//PID
-//[PROCESS_TABLE + 16*2 + 4] = CREATED;	//STATE
-//[PROCESS_TABLE + 16*2 + 11] = 88;	//UAPN
-//[PROCESS_TABLE + 16*2 + 12] = 0;	//KASP
-//[PROCESS_TABLE + 16*2 + 13] = 8*512;	//UASP
-//[PROCESS_TABLE + 16*2 + 14] = PTBR;	//PTBR
-//[PROCESS_TABLE + 16*2 + 15] = PTLR; 	//PTLR
-
-//[86*512] = [83*512 + 1];		//ENTRY POINT
-
-//LOAD EXECUTABLE FILE 4th procs
-//loadi(89,70);
-
-//PTBR = PTBR + 20;
-//PTLR = 10;
-
-//LIBRARY
-//[PTBR+0] = 63;
-//[PTBR+1] = "0100";
-//[PTBR+2] = 64;
-//[PTBR+3] = "0100";
-
-//HEAP
-//[PTBR+4] = 90;
-//[PTBR+5] = "0110";
-//[PTBR+6] = 91;
-//[PTBR+7] = "0110";
-
-//CODE
-//[PTBR+8] = 89;
-//[PTBR+9] = "0100";
-//[PTBR+10] = -1;
-//[PTBR+11] = "0000";
-//[PTBR+12] = -1;
-//[PTBR+13] = "0000";
-//[PTBR+14] = -1;
-//[PTBR+15] = "0000";
-
-//STACK
-//[PTBR+16] = 92;
-//[PTBR+17] = "0110";
-//[PTBR+18] = 93;
-//[PTBR+19] = "0110";
-
-//[PROCESS_TABLE + 16*3 + 1] = 3;		//PID
-//[PROCESS_TABLE + 16*3 + 4] = CREATED;	//STATE
-//[PROCESS_TABLE + 16*3 + 11] = 94;	//UAPN
-//[PROCESS_TABLE + 16*3 + 12] = 0;	//KASP
-//[PROCESS_TABLE + 16*3 + 13] = 8*512;	//UASP
-//[PROCESS_TABLE + 16*3 + 14] = PTBR;	//PTBR
-//[PROCESS_TABLE + 16*3 + 15] = PTLR; 	//PTLR
-
-//[92*512] = [89*512 + 1];		//ENTRY POINT
-
-//--------------------commented--------------------------------
-
-//SCHEDULER MODULE 7
-loadi(50,63);
-loadi(51,64);
-
-//INITIALIZE STATE FIELD TO TERMINATED OF REMAINING PROCESS
-alias p_num R0;
-alias addrs_state_procs R1;
-p_num = 2;
-while (p_num < 16) do
-	addrs_state_procs = PROCESS_TABLE + 16*p_num + 4;
-	[addrs_state_procs] = TERMINATED;
-	p_num = p_num + 1;
 endwhile;
 
-//------------------------------modification in STAGE 15-------------------------------------------------------------------
+//WAIT_MEM_COUNT---------> 0
+[SYSTEM_STATUS_TABLE + 3] = 0;
 
-//LOAD MODULE 0
-loadi(40,53);
-loadi(41,54);
+//MEM_FREE_COUNT
+[SYSTEM_STATUS_TABLE + 2] = 128 - 82;			//1-75 resv for os 
+							//76-80 for INIT Page Table
+							//81-82 for idle Page Table
+//-----------------------------------------------------------------------
 
-//LOAD MODULE 4
-loadi(48,61);
-loadi(49,62);
-
+//Unlocking the Terminal
 [TERMINAL_STATUS_TABLE + 0] = 0;
-
-//-------------------------------modification uptil STAGE 15--------------------------------------------------------------
-
-//-------------------------------modification in STAGE 16----------------------------------------------------------------
-
-//load CONSOLE INTERRUPT HANDLER
-loadi(8,21);
-loadi(9,22);
-
-//load INTERRUPT 6
-loadi(14,27);
-loadi(15,28);
-
-//-------------------------------modification uptil STAGE 16-------------------------------------------------------------
 
 return;
 
