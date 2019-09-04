@@ -1,8 +1,36 @@
-//---------------------------------------modification in STAGE 14------------------------------------------------------------------
+//----------------------------RESOURCE MANAGER MODULE-----------------------------------------
+//------------------------------MODULE 0-----------------------------------------------
 
 alias functionNum R1;
 alias currentPID R2;
 alias retval R0;
+
+if (functionNum == ACQUIRE_DISK) then
+
+	//check the status of disk 
+	//if not free 
+	//set the state of current process to WAIT_DISK
+	//call scheduler
+	while ([DISK_STATUS_TABLE] == 1) do
+
+		[PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
+
+		backup;
+		call MOD_5;
+		restore;
+
+	endwhile;
+
+	//Disk is now free
+	//This process has been scheduled
+
+	//LOCK the disk
+	[DISK_STATUS_TABLE] = 1;
+	[DISK_STATUS_TABLE + 4] = currentPID;
+
+	return;
+
+endif;
 
 if (functionNum == 8) then
 //Acquire Terminal

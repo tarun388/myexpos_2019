@@ -3,6 +3,7 @@ load --init $HOME/myexpos/expl/expl_progs/shell_v1.xsm
 load --idle $HOME/myexpos/expl/expl_progs/idle.xsm
 load --exhandler $HOME/myexpos/spl/spl_progs/haltprog.xsm
 load --library $HOME/myexpos/expl/library.lib
+load --int=disk $HOME/myexpos/spl/spl_progs/disk.xsm
 load --int=console $HOME/myexpos/spl/spl_progs/console.xsm
 load --int=timer $HOME/myexpos/spl/spl_progs/sample_timer.xsm
 load --int=6 $HOME/myexpos/spl/spl_progs/INT_6.xsm

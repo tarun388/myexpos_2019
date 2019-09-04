@@ -1,7 +1,38 @@
-//---------------------modification in STAGE 15-------------------------------
+//----------------------------Device Manager Module-------------------------------
+//------------------------------Module 4------------------------------------------
 
 alias functionNum R1;
 alias currentPID R2;
+
+if (functionNum == DISK_LOAD) then
+	
+	alias pageNum R3;
+	alias BlockNum R4;
+
+	//Acquire the disk
+	backup;
+	R1 = ACQUIRE_DISK;
+	R2 = currentPID;
+	call MOD_0;
+	restore;
+
+	//call returns here thus disk has been acquired by this process and this process has been scheduled
+	
+	[DISK_STATUS_TABLE + 1] = 0;		//LOAD bit set in disk status table
+	[DISK_STATUS_TABLE + 2] = pageNum;	//Page Number set
+	[DISK_STATUS_TABLE + 3] = BlockNum;	//Block number set
+
+	load(pageNum,BlockNum);
+
+	[PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
+
+	backup;
+	call MOD_5;
+	restore;
+
+	return;
+
+endif;
 
 if (functionNum == TERMINAL_WRITE) then
 	backup;

@@ -23,7 +23,7 @@ alias temp_mode R4;
 //breakpoint;
 
 //schedule the process starting from cur_pid + 1
-while(temp_pid < 2) do
+while(temp_pid < 16) do
 	temp_mode = [PROCESS_TABLE + temp_pid*16 + 4]; 
 	if( (temp_mode == READY) || (temp_mode == CREATED) ) then
 		new_pid = temp_pid;

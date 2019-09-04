@@ -11,6 +11,10 @@ loadi(3,14);
 loadi(4,17);
 loadi(5,18);
 
+//Disk Controller Interrupt Routine
+loadi(6,19);
+loadi(7,20);
+
 //Console Interrupt Handler
 loadi(8,21);
 loadi(9,22);
@@ -123,12 +127,22 @@ PTLR = 10;
 
 [76*512] = [65*512+1];		//ENTRY POINT
 
+//Initialize Per Process Resource Table of INIT
+alias i R0;
+i = 496;
+
+while (i <= 511) do
+
+	[80 * 512 + i] = -1;
+	i = i + 2;
+
+endwhile;
+
 //------------------------------------------------------------------------
 
 
 //------------------updating MEMORY_FREE_LIST-----------------------------
 
-alias i R0;
 i = 0;
 while (i < MAX_MEM_PAGE) do
 
@@ -152,10 +166,14 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 2] = 128 - 82;			//1-75 resv for os 
 							//76-80 for INIT Page Table
 							//81-82 for idle Page Table
+
 //-----------------------------------------------------------------------
 
 //Unlocking the Terminal
 [TERMINAL_STATUS_TABLE + 0] = 0;
+
+//set the disk free
+[DISK_STATUS_TABLE] = 0;
 
 return;
 

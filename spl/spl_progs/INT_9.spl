@@ -114,7 +114,13 @@ if ([INODE_TABLE + i*16 + 8] != -1) then
 	call MOD_2;
 	[PTBR + 8] = R0;
 	[PTBR + 9] = "0100";
-	loadi(R0,[INODE_TABLE + i*16 + 8]);				//load code from disk
+	restore;
+	backup;				//load code from disk
+	R1 = DISK_LOAD;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = [PTBR + 8];
+	R4 = [INODE_TABLE + i*16 + 8];
+	call MOD_4;
 	restore;
 endif;
 
@@ -124,7 +130,13 @@ if ([INODE_TABLE + i*16 + 9]  != -1) then
 	call MOD_2;
 	[PTBR + 10] = R0;
 	[PTBR + 11] = "0100";
-	loadi(R0,[INODE_TABLE + i*16 + 9]);				//load code from disk
+	restore;
+	backup;				//load code from disk
+	R1 = DISK_LOAD;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = [PTBR + 10];
+	R4 = [INODE_TABLE + i*16 + 9];
+	call MOD_4;
 	restore;
 endif; 
 
@@ -134,7 +146,13 @@ if ([INODE_TABLE + i*16 + 10] != -1) then
 	call MOD_2;
 	[PTBR + 12] = R0;
 	[PTBR + 13] = "0100";
-	loadi(R0,[INODE_TABLE + i*16 + 10]);				//load code from disk
+	restore;
+	backup;				//load code from disk
+	R1 = DISK_LOAD;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = [PTBR + 12];
+	R4 = [INODE_TABLE + i*16 + 10];
+	call MOD_4;
 	restore;
 endif;
 
@@ -144,9 +162,32 @@ if ([INODE_TABLE + i*16 + 11] != -1) then
 	call MOD_2;
 	[PTBR + 14] = R0;
 	[PTBR + 15] = "0100";
-	loadi(R0,[INODE_TABLE + i*16 + 11]);				//load code from disk
+	restore;
+	backup;				//load code from disk
+	R1 = DISK_LOAD;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = [PTBR + 14];
+	R4 = [INODE_TABLE + i*16 + 11];
+	call MOD_4;
 	restore;
 endif;
+
+//Initialize each entry in PER_PROCESS_TABLE present in last 16 words of user area page to -1
+//PER_PROCESS_TABLE is present
+//in last 16 word of 
+//user area page
+//having 8 entries
+//2 words each
+//so offset of 496
+
+i = 496;
+while (i <= 511) do
+	
+	[[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11]*512 + i] = -1;
+	i = i + 2;
+	
+endwhile;
+
 
 [[PTBR + 16] * 512] = [[PTBR + 8] * 512 + 1];		//ENTRY POINT
 

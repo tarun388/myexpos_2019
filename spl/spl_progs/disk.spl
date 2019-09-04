@@ -1,0 +1,34 @@
+//-------------------------DISK INTERRUPT HANDLER---------------------------------
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+
+alias userSP R0;
+userSP = SP;
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+backup;
+
+//Disk is now free
+[DISK_STATUS_TABLE] = 0;
+
+alias i R1;
+i = 0;
+
+//change the state of all processes to ready which are waiting for disk
+while (i < MAX_PROC_NUM) do
+
+	if ([PROCESS_TABLE + (i * 16) + 4] == WAIT_DISK) then
+
+		[PROCESS_TABLE + (i * 16) + 4] = READY;
+
+	endif;
+	i = i + 1;
+
+endwhile;
+
+restore;
+
+SP = userSP;
+
+ireturn;
