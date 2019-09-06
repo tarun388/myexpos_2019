@@ -29,10 +29,11 @@ begin
 	mystr = "Enter first number";
 	temp = exposcall("Write",-2,mystr);
 	temp = exposcall("Read",-1,a);
+breakpoint;
 	mystr = "Enter second number";
 	temp = exposcall("Write",-2,mystr);
 	temp = exposcall("Read",-1,b);
-	
+breakpoint;	
 	if (a < b) then
 		ans = gcd(b,a);
 	else

@@ -1,0 +1,17 @@
+int main(){
+decl
+	int tmp;
+	int n;
+	int i;
+enddecl
+
+begin
+	tmp = exposcall("Read",-1,n);
+	i = 2;
+	while (i <= n) do
+		tmp = exposcall("Write",-2,i);
+		i = i + 2;
+	endwhile;
+	return 0;
+end
+}

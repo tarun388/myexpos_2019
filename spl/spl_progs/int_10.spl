@@ -1,8 +1,12 @@
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
 //state change to TERMINATED
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = TERMINATED;
 
 alias temp_pid R0;
 temp_pid  = 1;
+
+breakpoint;
 
 while (temp_pid < 16) do
 	if([PROCESS_TABLE + temp_pid*16 + 4] != TERMINATED) then

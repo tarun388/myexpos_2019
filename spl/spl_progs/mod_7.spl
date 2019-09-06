@@ -70,48 +70,49 @@ PTLR = 10;
 
 //-------------------------commented-----------------------//
 //LOAD EXECUTABLE FILE 3rd procs
-//loadi(83,69);
+loadi(83,69);
+loadi(89,70);
 
-//PTBR = PTBR + 20;
-//PTLR = 10;
+PTBR = PTBR + 20;
+PTLR = 10;
 
 //LIBRARY
-//[PTBR+0] = 63;
-//[PTBR+1] = "0100";
-//[PTBR+2] = 64;
-//[PTBR+3] = "0100";
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
 
 //HEAP
-//[PTBR+4] = 84;
-//[PTBR+5] = "0110";
-//[PTBR+6] = 85;
-//[PTBR+7] = "0110";
+[PTBR+4] = 84;
+[PTBR+5] = "0110";
+[PTBR+6] = 85;
+[PTBR+7] = "0110";
 
 //CODE
-//[PTBR+8] = 83;
-//[PTBR+9] = "0100";
-//[PTBR+10] = -1;
-//[PTBR+11] = "0000";
-//[PTBR+12] = -1;
-//[PTBR+13] = "0000";
-//[PTBR+14] = -1;
-//[PTBR+15] = "0000";
+[PTBR+8] = 83;
+[PTBR+9] = "0100";
+[PTBR+10] = 89;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
 
 //STACK
-//[PTBR+16] = 86;
-//[PTBR+17] = "0110";
-//[PTBR+18] = 87;
-//[PTBR+19] = "0110";
+[PTBR+16] = 86;
+[PTBR+17] = "0110";
+[PTBR+18] = 87;
+[PTBR+19] = "0110";
 
-//[PROCESS_TABLE + 16*2 + 1] = 2;		//PID
-//[PROCESS_TABLE + 16*2 + 4] = CREATED;	//STATE
-//[PROCESS_TABLE + 16*2 + 11] = 88;	//UAPN
-//[PROCESS_TABLE + 16*2 + 12] = 0;	//KASP
-//[PROCESS_TABLE + 16*2 + 13] = 8*512;	//UASP
-//[PROCESS_TABLE + 16*2 + 14] = PTBR;	//PTBR
-//[PROCESS_TABLE + 16*2 + 15] = PTLR; 	//PTLR
+[PROCESS_TABLE + 16*2 + 1] = 2;		//PID
+[PROCESS_TABLE + 16*2 + 4] = CREATED;	//STATE
+[PROCESS_TABLE + 16*2 + 11] = 88;	//UAPN
+[PROCESS_TABLE + 16*2 + 12] = 0;	//KASP
+[PROCESS_TABLE + 16*2 + 13] = 8*512;	//UASP
+[PROCESS_TABLE + 16*2 + 14] = PTBR;	//PTBR
+[PROCESS_TABLE + 16*2 + 15] = PTLR; 	//PTLR
 
-//[86*512] = [83*512 + 1];		//ENTRY POINT
+[86*512] = [83*512 + 1];		//ENTRY POINT
 
 //LOAD EXECUTABLE FILE 4th procs
 //loadi(89,70);
@@ -166,7 +167,7 @@ loadi(51,64);
 //INITIALIZE STATE FIELD TO TERMINATED OF REMAINING PROCESS
 alias p_num R0;
 alias addrs_state_procs R1;
-p_num = 2;
+p_num = 3;
 while (p_num < 16) do
 	addrs_state_procs = PROCESS_TABLE + 16*p_num + 4;
 	[addrs_state_procs] = TERMINATED;
