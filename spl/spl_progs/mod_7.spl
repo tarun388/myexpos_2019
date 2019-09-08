@@ -59,6 +59,9 @@ loadi(51,64);
 loadi(59,3);
 loadi(60,4);
 
+//Disk Free List
+loadi(61,2);
+
 //Expos Library
 loadi(63,13);
 loadi(64,14);

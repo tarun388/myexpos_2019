@@ -23,7 +23,7 @@ if (functionNum == EXIT_PROCESS) then
 	R1 = FREE_PAGE_TABLE;
 	R2 = exitPID;
 	call MOD_1;
-restore;
+	restore;
 
 	backup;
 	R1 = FREE_USER_AREA_PAGE;
@@ -62,6 +62,26 @@ if  (functionNum == FREE_PAGE_TABLE) then
 
 		endif;
 		i = i + 2;	
+
+	endwhile;
+
+	//Release the disk block, and invalidate the DISK_MAP_TABLE
+	//call RELEASE BLOCK to free the occupied block
+	i = 0;
+	while (i < 10) do
+
+		if (([DISK_MAP_TABLE + exitPID*10 + i] != -1) && (i == 2 || i == 3 || i == 8 || i == 9)) then 
+
+			backup;
+			R1 = RELEASE_BLOCK;
+			R2 = [DISK_MAP_TABLE + exitPID*10 + i];
+			R3 = exitPID;
+			call MOD_2;
+			restore;
+
+		endif;
+		[DISK_MAP_TABLE + exitPID*10 + i] = -1;
+		i = i + 1;
 
 	endwhile;
 
