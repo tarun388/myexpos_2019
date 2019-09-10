@@ -10,6 +10,17 @@ backup;
 //STATE CHANGE RUNNING TO READY
 [PROCESS_TABLE +([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = READY;
 
+//Loop through the Process table entries,
+//and increment the TICk field of each process
+alias i R0;
+i = 0;
+while (i < 16) do
+
+	[PROCESS_TABLE + i*16] = [PROCESS_TABLE + i*16] + 1;
+	i = i + 1;
+
+endwhile;
+
 //INVOKE CONTEXT SWITCH MODULE
 call MOD_5;
 
