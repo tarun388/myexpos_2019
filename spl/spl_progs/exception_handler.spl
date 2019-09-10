@@ -18,11 +18,16 @@ if (EC == 1) then
 
 	print "Illegal";
 	print "Instruction";
+	
+	backup;
 	R1 = EXIT_PROCESS;
 	R2 = [SYSTEM_STATUS_TABLE + 1];
 	call MOD_1;
-
+	restore;
+	
+	backup;
 	call MOD_5;
+	restore;
 
 endif;
 
@@ -31,11 +36,16 @@ if (EC == 2) then
 	print "Illegal";
 	print "Memory";
 	print "Access";
+	
+	backup;
 	R1 = EXIT_PROCESS;
 	R2 = [SYSTEM_STATUS_TABLE + 1];
 	call MOD_1;
+	restore;
 
+	backup;
 	call MOD_5;
+	restore;
 
 endif;
 
@@ -43,11 +53,16 @@ if (EC == 3) then
 
 	print "Arithmetic";
 	print "Fault";
+	
+	backup;
 	R1 = EXIT_PROCESS;
 	R2 = [SYSTEM_STATUS_TABLE + 1];
 	call MOD_1;
+	restore;
 
+	backup;
 	call MOD_5;
+	restore;
 	
 endif;
 
@@ -73,16 +88,16 @@ if (EC == 0) then
 		backup;
 		R1 = GET_FREE_PAGE;
 		call MOD_2;
-		[PTBR + 4] = R0;
-		[PTBR + 5] = "1110";
+		[PTBR + EPN * 2] = R0;
+		[PTBR + EPN * 2 + 1] = "1110";
 		restore;
 
-		backup;
-		R1 = GET_FREE_PAGE;
-		call MOD_2;
-		[PTBR + 6] = R0;
-		[PTBR + 7] = "1110";
-		restore;
+		//ckup;
+		// = GET_FREE_PAGE;
+		//ll MOD_2;
+		//TBR + 6] = R0;
+		//TBR + 7] = "1110";
+		//store;
 
 	endif;
 

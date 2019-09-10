@@ -166,7 +166,7 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 
 //MEM_FREE_COUNT
-[SYSTEM_STATUS_TABLE + 2] = 128 - 82;			//1-75 resv for os 
+[SYSTEM_STATUS_TABLE + 2] = 128 - 83;			//1-75 resv for os 
 							//76-80 for INIT Page Table
 							//81-82 for idle Page Table
 

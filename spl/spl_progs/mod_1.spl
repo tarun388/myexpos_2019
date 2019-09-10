@@ -39,6 +39,7 @@ endif;
 
 if  (functionNum == FREE_PAGE_TABLE) then
 
+	PTBR = PAGE_TABLE_BASE + exitPID * 20;
 	//invalidate the page table entries for the library
 	[PTBR + 0] = -1;
 	[PTBR + 1] = "0000";

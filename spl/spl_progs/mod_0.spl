@@ -35,27 +35,19 @@ endif;
 if (functionNum == 8) then
 //Acquire Terminal
 
-	//multipush (R1, R2);
-	backup;
-	currentPID = [SYSTEM_STATUS_TABLE + 1];	
-
-	while ([TERMINAL_STATUS_TABLE + 0] == 1) do
+	while ([TERMINAL_STATUS_TABLE] == 1) do
 		[PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;		//change the state of the current process in its process table entry to WAIT_TERMINAL
-		//multipush (R1, R2);
 		backup;
 
 		call MOD_5;
 
 		restore;
-		//multipop (R1, R2);
 
 	endwhile;
 
-	[TERMINAL_STATUS_TABLE + 0] = 1;			//status field to 1
+	[TERMINAL_STATUS_TABLE] = 1;			//status field to 1
 	[TERMINAL_STATUS_TABLE + 1] = currentPID;
 
-	//multipop (R1, R2);
-	restore;
 	return;	
 
 endif;
@@ -64,16 +56,12 @@ if(functionNum == 9) then
 //Release Terminal
 
 	if ([TERMINAL_STATUS_TABLE + 1] != currentPID) then 
-		print(currentPID);
 		retval = -1;
 		return;
 
 	endif;	
 
-	[TERMINAL_STATUS_TABLE + 0] = 0;
-	
-	//multipush (R1);
-	backup;
+	[TERMINAL_STATUS_TABLE] = 0;
 
 	alias tempid R1;
 	tempid = 0;
@@ -86,10 +74,6 @@ if(functionNum == 9) then
 	endwhile;
 
 	retval = 0;
-
-	//multipop (R1);
-	restore;
-	//breakpoint;
 
 	return;
 

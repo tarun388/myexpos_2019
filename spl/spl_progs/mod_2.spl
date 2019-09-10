@@ -26,7 +26,7 @@ if (functionNum == GET_FREE_PAGE) then
 	[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
 
 	alias i R3;
-	i = 0;
+	i = 76;
 	while (i < MAX_MEM_PAGE) do
 			
 		if ([MEMORY_FREE_LIST + i] == 0) then
@@ -81,7 +81,7 @@ if (functionNum == RELEASE_BLOCK) then
 	alias blocknum R2;
 	alias curPID R3;
 
-	[DISK_FREE_LIST + blocknum] = 0;
+	[DISK_FREE_LIST + blocknum] = [DISK_FREE_LIST + blocknum] - 1;
 
 	return;
 
@@ -135,7 +135,7 @@ if (functionNum == GET_CODE_PAGE) then
 	//Get a free memory page
 	R1 = GET_FREE_PAGE;
 	call MOD_2;
-
+	
 	//Load the disk into memory page
 	R4 = blocknum;
 	R1 = DISK_LOAD;

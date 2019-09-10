@@ -16,7 +16,7 @@ load --module 2 $HOME/myexpos/spl/spl_progs/mod_2.xsm
 load --module 4 $HOME/myexpos/spl/spl_progs/mod_4.xsm
 load --module 5 $HOME/myexpos/spl/spl_progs/mod_5.xsm
 load --module 7 $HOME/myexpos/spl/spl_progs/mod_7.xsm
-load --exec $HOME/myexpos/expl/expl_progs/gcd.xsm
-load --exec $HOME/myexpos/expl/expl_progs/assg2.xsm
+load --exec $HOME/myexpos/expl/expl_progs/llist.xsm
+load --exec $HOME/myexpos/expl/expl_progs/llist_1.xsm
 load --exec $HOME/myexpos/expl/expl_progs/prime.xsm
-load --exec $HOME/myexpos/expl/expl_progs/even.xsm
+load --exec $HOME/myexpos/expl/expl_progs/gcd.xsm
