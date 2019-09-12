@@ -1,15 +1,15 @@
 //set mode flag to sys call number 5 for write
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 5;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 5;
 
 //store SP
 alias userSP R0;
 userSP = SP;
 
 //save the SP in the user SP field of PT
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 13] = userSP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
 
 //set the value of stack to beginning of kernel stack
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 11] * 512 - 1 ;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1 ;
 
 //logical to physical address translation of stack entry
 alias physicalPageNum R1;
@@ -22,37 +22,28 @@ alias fileDescriptor R4;
 fileDescriptor = [fileDescPhysicalAddr];
 
 //check file descriptor validity 
-if (fileDescriptor != -2)
-then
+if (fileDescriptor != -2) then
+
 	alias physicalAddrRetVal R5;
 	physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
 	[physicalAddrRetVal] = -1;
+
 else
-	alias word R5;
+	alias word R6;
 	word = [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
 
 //-----------------------------modification in STAGE 15---------------------------
 	
-	//multipush(R0, R1, R2, R3, R4 ,R5);
 	backup;
-
-	alias Terminal_write_fn R1;
-	Terminal_write_fn = 3;				//Function number for terminal write is '3' passed through reg1
-
-	alias cur_PID R2;
-	cur_PID = [SYSTEM_STATUS_TABLE + 1];		//PID of the current process in reg2
-
-	alias word_to_print R3;
-	word_to_print = word;				//word to be printed to the terminal in reg3
-
+	R1 = TERMINAL_WRITE;			//Function number for terminal write is '3' passed through reg1
+	R2 = [SYSTEM_STATUS_TABLE + 1];		//PID of the current process in reg2
+	R3 = word;				//word to be printed to the terminal in reg3
 	call MOD_4;	
-
 	restore;
-	//multipop (R0, R1, R2, R3, R4, R5);
 
 //--------------------------modification uptil STAGE 15----------------------------
 
-	alias physicalAddrRetVal R6;
+	alias physicalAddrRetVal R7;
 	physicalAddrRetVal = ([PTBR + 2 * (userSP - 1) / 512] * 512) + ((userSP - 1) % 512);
 	[physicalAddrRetVal] = 0;
 endif;

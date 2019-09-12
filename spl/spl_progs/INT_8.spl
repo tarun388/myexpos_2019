@@ -1,0 +1,210 @@
+//----------------------------------------INTERRUPT 8-----------------------------------------------------
+//-------------------------------------FORK SYSTEM CALL--------------------------------------------------
+
+alias parent_procs_table R4;
+parent_procs_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16; 
+
+//Mode Flag -----> 8
+[parent_procs_table + 9] = 8;
+
+[parent_procs_table + 13] = SP;
+
+alias userSP R5;
+userSP = SP;
+
+SP = [parent_procs_table + 11] * 512 - 1; 
+
+multipush (R4,R5);
+
+R1 = GET_PCB_ENTRY;
+call MOD_1;
+
+multipop (R4,R5);
+
+breakpoint;
+
+if (R0 == -1) then
+
+	//No free entry found
+	alias ret_page R6;
+	ret_page = [PTBR + 2 * (userSP - 1) / 512];
+	alias offset R7;
+	offset = (userSP - 1) % 512;
+	[ ret_page * 512 + offset ] = -1;
+
+else
+
+	alias child_procs_table R6;
+	child_procs_table = PROCESS_TABLE + R0 * 16;
+	alias child_page_table R7;
+	child_page_table  = PAGE_TABLE_BASE + R0 * 20;
+
+	//if HEAP page 1 of parent process
+	//is not allocated
+	if ([PTBR + 4] == -1) then
+	
+		backup;
+		R1 = GET_FREE_PAGE;
+		call MOD_2;
+		[PTBR + 4] = R0;
+		[PTBR + 5] = "0110";
+		restore;	
+	
+	endif;
+
+	//if HEAP page 2 of parent process
+	//is not allocated
+	if ([PTBR + 6] == -1) then
+
+		backup;
+		R1 = GET_FREE_PAGE;
+		call MOD_2;
+		[PTBR + 6] = R0;
+		[PTBR + 7] = "0110";
+		restore;
+
+	endif;
+	
+	//------Stack page 1 for child process-----------
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[child_page_table + 16] = R0;
+	[child_page_table + 17] = "0110";
+	restore;
+
+	//------stack page 2 for child process--------------
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[child_page_table + 18] = R0;
+	[child_page_table + 19] = "0110";
+	restore;
+
+	//-------user area page for child process-------------
+	backup;
+	R1 = GET_FREE_PAGE;
+	call MOD_2;
+	[child_procs_table + 11] = R0;
+	restore;
+	
+	//---------Child Process Table-----------------------
+
+	//copy from parent to child
+	[child_procs_table + 3] = [parent_procs_table + 3];	//USERID
+	[child_procs_table + 6] = [parent_procs_table + 6];	//SWAP FLAG
+	[child_procs_table + 10] = [parent_procs_table + 10];	//USER AREA SWAP STATUS
+	[child_procs_table + 7] = [parent_procs_table + 7];	//INODE INDEX
+	[child_procs_table + 13] = [parent_procs_table + 13];	//UASP
+
+	[child_procs_table + 9] = 0;				//Mode flag ---> 0
+	[child_procs_table + 12] = 0;				//KPTR	---> 0
+	[child_procs_table] = 0;				//TICK --> 0
+	[child_procs_table + 2] = [parent_procs_table + 1];	//PPID
+	[child_procs_table + 4] = CREATED;			//State
+	
+	//---------Child Process Per Process Resource Table---------
+	
+	alias i R1;
+	i = 0;
+	alias parent_pprt R2;
+	parent_pprt = [parent_procs_table + 11] * 512 + 496;
+	alias child_pprt R3;
+	child_pprt = [child_procs_table + 11] * 512 + 496;
+
+	while (i < 16) do
+	
+		[child_pprt + i] = [parent_pprt + i];
+		i = i + 1;
+
+	endwhile;
+
+	//-------Child Process Per-Process Disk Map Table-------------
+
+	i = 2;
+	alias parent_dmt R2;
+	parent_dmt = DISK_MAP_TABLE + [parent_procs_table + 1] * 10;
+	alias child_dmt R3;
+	child_dmt = DISK_MAP_TABLE + [child_procs_table + 1] * 10;
+
+	while(i < 8) do
+
+		[child_dmt + i] = [parent_dmt + i];
+		i = i + 1;	
+
+	endwhile;
+
+	[child_dmt + 8] = -1;
+	[child_dmt + 9] = -1;
+	
+	//-------Initialize Page Table of Child Process---------------
+
+	i = 0;
+	
+	while (i < 16) do
+
+		alias pg_num R2;
+		pg_num = [PTBR + i];
+		[child_page_table + i] = pg_num;
+		if (pg_num != -1) then
+			[MEMORY_FREE_LIST + pg_num] = [MEMORY_FREE_LIST + pg_num] + 1;
+		endif;
+		[child_page_table + i + 1] = [PTBR + i + 1];
+		i = i + 2;
+	
+	endwhile;
+	
+	//Stack already initialized
+
+	//-----------------copy stack content word by word-------------	
+
+	//stack 1
+	i = 0;
+	alias parent_ustack R2;
+	parent_ustack = [PTBR + 16] * 512;
+	alias child_ustack R3;
+	child_ustack = [child_page_table + 16] * 512;
+
+	while (i < 512) do
+
+		[child_ustack + i] = [parent_ustack + i];
+		i = i + 1;
+	
+	endwhile;
+
+	//stack 2
+	i = 0;
+	parent_ustack = [PTBR + 18] * 512;
+	child_ustack = [child_page_table + 18] * 512;	
+
+	while (i < 512) do
+	
+		[child_ustack + i] = [parent_ustack + i];
+		i = i + 1;
+
+	endwhile; 
+
+	//Store BP on top of the kernel stack
+	//of child process
+	[[child_procs_table + 11] * 512] = BP;
+
+	alias ret_page R1;
+	ret_page = 2 * (userSP - 1) / 512;
+	alias offset R2;
+	offset = (userSP - 1) % 512;
+
+	//retvalue for parent process
+	//PID of child process
+	[[PTBR + ret_page] * 512 + offset] = [child_procs_table + 1];
+
+	//return value for child process ---> 0	
+	[[child_page_table + ret_page] * 512 + offset] = 0;
+
+endif;
+	
+SP = userSP;
+
+[parent_procs_table + 9] = 0;	
+breakpoint;
+ireturn;
+

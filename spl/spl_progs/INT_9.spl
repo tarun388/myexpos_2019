@@ -1,7 +1,7 @@
 //----------------------------------INTERRUPT 9--------------------------------
 
 //------------------------------EXEC Sysyem Call---------------------------------
-
+breakpoint;
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
 
 alias userSP R0;
@@ -95,21 +95,13 @@ restore;
 
 //----HEAP 1---------
 //Invalidate only
-//backup;
-//R1 = GET_FREE_PAGE;
-//call MOD_2;
 [PTBR + 4] = -1;
 [PTBR + 5] = "0000";
-//restore;
 
 //----HEAP 2---------
 //Invalidate only
-//backup;
-//R1 = GET_FREE_PAGE;
-//call MOD_2;
 [PTBR + 6] = -1;
 [PTBR + 7] = "0000";
-//restore;
 
 //-----------validate code entries---------
 
@@ -120,6 +112,7 @@ if ([INODE_TABLE + i*16 + 8] != -1) then
 	backup;
 	R1 = GET_CODE_PAGE;
 	R2 = [INODE_TABLE + i*16 + 8];
+	R3 = [SYSTEM_STATUS_TABLE + 1];
 	call MOD_2;
 	[PTBR + 8] = R0;
 	[PTBR + 9] = "0100";
@@ -173,5 +166,7 @@ endwhile;
 SP = 8 * 512;
 
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 0;
+
+PTBR = PAGE_TABLE_BASE + (20 * [SYSTEM_STATUS_TABLE + 1]);
 
 ireturn;

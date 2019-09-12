@@ -1,0 +1,11 @@
+int main(){
+decl
+int x,y; 
+enddecl
+
+begin
+	x = 0;
+	y = 2 / x;
+	return 0;
+end
+}

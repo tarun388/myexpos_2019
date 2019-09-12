@@ -1,0 +1,42 @@
+int main(){
+decl
+
+	int ret,tmp;
+	str msg;
+
+enddecl
+
+begin
+	ret = exposcall("Fork");
+	breakpoint;
+	if (ret == -1) then 
+
+		msg = "No Fork!";
+		ret = exposcall("Write",-2,msg);
+
+	else
+	
+		if (ret == 0) then
+				
+			msg = "child";
+			tmp = exposcall("Write",-2,msg);
+			ret = exposcall("Exec","odd.xsm");
+		
+		else
+			msg = "parent";
+			tmp = exposcall("Write",-2,msg);
+			ret = exposcall("Exec","even.xsm");
+	
+		endif;
+
+		if (ret == -1) then
+		
+			msg = "FileNotFound";
+			ret = exposcall("Write",-2,msg);
+
+		endif;
+
+	endif;
+	return 0;
+end
+}

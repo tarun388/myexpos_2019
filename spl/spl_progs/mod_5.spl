@@ -42,6 +42,7 @@ PTLR = [PROCESS_TABLE + new_pid*16 + 15];
 //if CREATED, change state to running and SP to UASP then return back to user process
 if( [PROCESS_TABLE + new_pid*16 + 4] == CREATED) then
 	SP = [PROCESS_TABLE + new_pid*16 + 13];
+	BP = [[PROCESS_TABLE + new_pid * 16 + 11] * 512];		//BP set to previously saved BP value on top of kernel stack during fork system call
 	[PROCESS_TABLE + new_pid*16 + 4] = RUNNING;
 	[PROCESS_TABLE + new_pid*16 + 9] = 0;
 	ireturn;

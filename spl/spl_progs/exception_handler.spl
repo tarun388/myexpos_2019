@@ -5,9 +5,6 @@
 
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 13] = SP;
 
-alias userSP R0;
-userSP = SP;
-
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 11] * 512 - 1;
 
 backup;
@@ -25,9 +22,7 @@ if (EC == 1) then
 	call MOD_1;
 	restore;
 	
-	backup;
 	call MOD_5;
-	restore;
 
 endif;
 
@@ -43,9 +38,7 @@ if (EC == 2) then
 	call MOD_1;
 	restore;
 
-	backup;
 	call MOD_5;
-	restore;
 
 endif;
 
@@ -60,9 +53,7 @@ if (EC == 3) then
 	call MOD_1;
 	restore;
 
-	backup;
 	call MOD_5;
-	restore;
 	
 endif;
 
@@ -73,11 +64,14 @@ if (EC == 0) then
 	if ((EPN >= 4) && (EPN <= 7)) then 
 
 		backup;
+		multipush(EPN);
 		R1 = GET_CODE_PAGE;
-		R2 = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1] * 10 + EPN];
+		R2 = [DISK_MAP_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 10) + EPN];
+		R3 = [SYSTEM_STATUS_TABLE + 1];
 		call MOD_2;
-		[PTBR + EPN * 2] = R0;
-		[PTBR + EPN * 2 + 1] = "1100";
+		multipop(EPN);
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 1] * 20) + (EPN * 2)] = R0;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 1] * 20) + (EPN * 2) + 1] = "1100";
 		restore;
 
 	endif;
@@ -88,17 +82,16 @@ if (EC == 0) then
 		backup;
 		R1 = GET_FREE_PAGE;
 		call MOD_2;
-		[PTBR + EPN * 2] = R0;
-		[PTBR + EPN * 2 + 1] = "1110";
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 1]*20) + 4] = R0;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 1]*20) + 5] = "1110";
 		restore;
 
-		//ckup;
-		// = GET_FREE_PAGE;
-		//ll MOD_2;
-		//TBR + 6] = R0;
-		//TBR + 7] = "1110";
-		//store;
-
+		backup;
+		R1 = GET_FREE_PAGE;
+		call MOD_2;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 1]*20) + 6] = R0;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 1]*20) + 7] = "1110";
+		restore; 
 	endif;
 
 endif;

@@ -24,8 +24,9 @@ if (functionNum == GET_FREE_PAGE) then
 	
 	//decrement mem_free_count
 	[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
-
-	alias i R3;
+	
+	multipush (R7);
+	alias i R7;
 	i = 76;
 	while (i < MAX_MEM_PAGE) do
 			
@@ -37,10 +38,11 @@ if (functionNum == GET_FREE_PAGE) then
 		endif;
 		i = i + 1;
 	
-	endwhile; 
+	endwhile; 	
 
 	R0 = i;					//return free page number
-
+	
+	multipop (R7);
 	return;
 
 endif;
@@ -90,9 +92,9 @@ endif;
 if (functionNum == GET_CODE_PAGE) then
 
 	alias blocknum R2;
-	
-	alias procs_id R3;
-	alias itr R4;
+	alias curPID R3;	
+	alias procs_id R4;
+	alias itr R5;
 
 	//If the required code page is already loaded by some other process,
 	//we simply increment the share count in the Mem Free list
@@ -110,7 +112,7 @@ if (functionNum == GET_CODE_PAGE) then
 				//i.e. this process uses the same code page 
 				if ([PAGE_TABLE_BASE + procs_id*20 + itr*2] != -1) then
 					
-					alias mem_pg R5;
+					alias mem_pg R6;
 					mem_pg = [PAGE_TABLE_BASE + procs_id*20 + itr*2];
 
 					//increment the share count
@@ -132,17 +134,18 @@ if (functionNum == GET_CODE_PAGE) then
 	//The code page is not in memory,
 	//and has to be loaded from disk.
 
+
 	//Get a free memory page
 	R1 = GET_FREE_PAGE;
 	call MOD_2;
-	
+
 	//Load the disk into memory page
-	R4 = blocknum;
 	R1 = DISK_LOAD;
-	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R4 = blocknum;
+	R2 = curPID;
 	R3 = R0;
-	call MOD_4;
-	
+	call MOD_4;		
+
 	return;
 
 endif;

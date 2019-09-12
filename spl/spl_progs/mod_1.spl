@@ -4,6 +4,38 @@
 alias functionNum R1;
 alias exitPID R2;
 
+if (functionNum == GET_PCB_ENTRY) then
+
+	alias i R4;
+	i = 0;
+	
+	//loop through the Process Table
+	//if process table entry free
+	//return index
+	while (i < 16) do
+
+		if ([PROCESS_TABLE + i * 16 + 4] == TERMINATED) then
+		
+			alias procs_table R5;
+			procs_table = PROCESS_TABLE + i*16;
+			[procs_table + 1] = i;
+			[procs_table + 4] = ALLOCATED;
+			[procs_table + 14] = PAGE_TABLE_BASE + 20 * i;
+			[procs_table + 15] = 10;
+			R0 = i;
+			return;		
+	
+		endif;
+		i = i + 1;
+
+	endwhile;
+
+	//if none of the process table is free
+	R0 = -1;
+	return;
+
+endif;
+
 if (functionNum == FREE_USER_AREA_PAGE) then
 
 	alias UAPN R3;
@@ -39,27 +71,28 @@ endif;
 
 if  (functionNum == FREE_PAGE_TABLE) then
 
-	PTBR = PAGE_TABLE_BASE + exitPID * 20;
+	alias page_table_base R1;
+	R1 = PAGE_TABLE_BASE + exitPID * 20;
 	//invalidate the page table entries for the library
-	[PTBR + 0] = -1;
-	[PTBR + 1] = "0000";
-	[PTBR + 2] = -1;
-	[PTBR + 3] = "0000";
+	[page_table_base + 0] = -1;
+	[page_table_base + 1] = "0000";
+	[page_table_base + 2] = -1;
+	[page_table_base + 3] = "0000";
 
 	//release the page for each valid page table entry in the page table, and invalidate the entry
-	alias i R3;
+	alias i R4;
 	i = 4;
 	while (i <= 18) do
 
-		if ([PTBR + i] != -1) then
+		if ([page_table_base + i] != -1) then
 		
 			backup;
 			R1 = RELEASE_PAGE;
-			R2 = [PTBR + i];
+			R2 = [page_table_base + i];
 			call MOD_2;
 			restore;
-			[PTBR + i] = -1;
-			[PTBR + i + 1] = "0000";
+			[page_table_base + i] = -1;
+			[page_table_base + i + 1] = "0000";
 
 		endif;
 		i = i + 2;	
@@ -75,8 +108,8 @@ if  (functionNum == FREE_PAGE_TABLE) then
 
 			backup;
 			R1 = RELEASE_BLOCK;
-			R2 = [DISK_MAP_TABLE + exitPID*10 + i];
 			R3 = exitPID;
+			R2 = [DISK_MAP_TABLE + exitPID*10 + i];
 			call MOD_2;
 			restore;
 

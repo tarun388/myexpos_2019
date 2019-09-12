@@ -27,6 +27,10 @@ loadi(15,28);
 loadi(16,29);
 loadi(17,30);
 
+//Interrupt 8 Routine : Fork
+loadi(18,31);
+loadi(19,32);
+
 //Interrupt 9 Routine : Exec
 loadi(20,33);
 loadi(21,34);
@@ -141,6 +145,18 @@ while (i <= 511) do
 
 endwhile;
 
+//Disk Map Table
+i = 0;
+while (i < 10) do
+
+	[DISK_MAP_TABLE + 10 + i] = -1;
+	i = i + 1;
+
+endwhile;
+
+[DISK_MAP_TABLE + 10 + 4] = 7;
+[DISK_MAP_TABLE + 10 + 5] = 8;
+
 //------------------------------------------------------------------------
 
 
@@ -177,6 +193,8 @@ endwhile;
 
 //set the disk free
 [DISK_STATUS_TABLE] = 0;
+
+//breakpoint;
 
 return;
 

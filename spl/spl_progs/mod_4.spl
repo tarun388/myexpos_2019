@@ -35,26 +35,20 @@ if (functionNum == DISK_LOAD) then
 endif;
 
 if (functionNum == TERMINAL_WRITE) then
+	
 	backup;
-
-	functionNum = 8;			//function number for Acquire Terminal is '8'
-
-	currentPID = [SYSTEM_STATUS_TABLE + 1];
-
+	R1 = ACQUIRE_TERMINAL;
+	R2 = currentPID;
 	call MOD_0;
-
 	restore;
 
-	alias word_to_be_printed R3;
-	print (word_to_be_printed);		
+	alias word R3;
+	print (word);		
 
 	backup;
-
-	functionNum = 9;			//function number for release Terminal is '9'
-	currentPID = [SYSTEM_STATUS_TABLE + 1];
-
+	R1 = RELEASE_TERMINAL;
+	R2 = currentPID;
 	call MOD_0;
-
 	restore;	
 
 	return;
@@ -68,12 +62,9 @@ endif;
 if (functionNum == TERMINAL_READ) then
 
 	backup;
-
-	R1 = ACQUIRE_TERMINAL;					//Acquire Terminal----> 8
-	R2 = [SYSTEM_STATUS_TABLE + 1];		//Current PID
-
+	R1 = ACQUIRE_TERMINAL;			//Acquire Terminal----> 8
+	R2 = currentPID;		//Current PID
 	call MOD_0;
-
 	restore;
 
 	read;					//read instruction
@@ -82,9 +73,7 @@ if (functionNum == TERMINAL_READ) then
 	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 4] = WAIT_TERMINAL;
 
 	backup;
-
 	call MOD_5;	
-	
 	restore;
 
 	alias phy_word_addr R4;
