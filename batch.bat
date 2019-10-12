@@ -12,6 +12,8 @@ load --int=8 $HOME/myexpos/spl/spl_progs/INT_8.xsm
 load --int=9 $HOME/myexpos/spl/spl_progs/INT_9.xsm
 load --int=10 $HOME/myexpos/spl/spl_progs/int_10.xsm
 load --int=11 $HOME/myexpos/spl/spl_progs/INT_11.xsm
+load --int=13 $HOME/myexpos/spl/spl_progs/INT_13.xsm
+load --int=14 $HOME/myexpos/spl/spl_progs/INT_14.xsm
 load --int=15 $HOME/myexpos/spl/spl_progs/haltprog.xsm
 load --module 0 $HOME/myexpos/spl/spl_progs/mod_0.xsm
 load --module 1 $HOME/myexpos/spl/spl_progs/mod_1.xsm
@@ -19,9 +21,9 @@ load --module 2 $HOME/myexpos/spl/spl_progs/mod_2.xsm
 load --module 4 $HOME/myexpos/spl/spl_progs/mod_4.xsm
 load --module 5 $HOME/myexpos/spl/spl_progs/mod_5.xsm
 load --module 7 $HOME/myexpos/spl/spl_progs/mod_7.xsm
-load --exec $HOME/myexpos/expl/expl_progs/even.xsm
-load --exec $HOME/myexpos/expl/expl_progs/odd.xsm
-load --exec $HOME/myexpos/expl/expl_progs/llist.xsm
-load --exec $HOME/myexpos/expl/expl_progs/llist_1.xsm
+load --exec $HOME/myexpos/expl/expl_progs/ms_s.xsm
+load --exec $HOME/myexpos/expl/expl_progs/child.xsm
+load --exec $HOME/myexpos/expl/expl_progs/parent.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s22_a1.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s21_a2.xsm
-load --exec $HOME/myexpos/expl/expl_progs/pid.xsm
+load --exec $HOME/myexpos/expl/expl_progs/ms_c.xsm

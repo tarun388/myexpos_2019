@@ -1,0 +1,126 @@
+//----------------------------------------INTERRUPT 14--------------------------------------------------------
+
+alias userSP R4;
+alias curPID R5;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+alias sys_call_num R6;
+alias retaddrs R7;
+alias phy_pg_num R8;
+alias offset R9;
+
+phy_pg_num = [PTBR + 2*(userSP-5)/512];
+offset = (userSP-5)%512;
+sys_call_num = [phy_pg_num*512 + offset];
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+[PROCESS_TABLE + curPID*16 + 9] = sys_call_num;
+
+alias semdesc R10;
+
+phy_pg_num = [PTBR + 2*(userSP-4)/512];
+offset = (userSP-4)%512;
+semdesc = [phy_pg_num*512 + offset];
+
+alias UAPN R11;
+alias semID R12;
+UAPN = [PROCESS_TABLE + curPID*16 + 11];
+
+if (sys_call_num == INT_SEMLOCK) then
+
+	//validity of semaphore descriptor
+	if ((semdesc >=0) && (semdesc <= 7) && ([UAPN*512 + 496 + 2*semdesc] == SEMAPHORE)) then
+ 
+		semID = [UAPN*512 + 496 + 2*semdesc + 1];
+
+		while ([SEMAPHORE_TABLE + 4*semID] != -1) do
+			//semaphore locked by other process
+			//wait this process
+			//busy loop
+			[PROCESS_TABLE + curPID*16 + 4] = WAIT_SEMAPHORE;
+			[PROCESS_TABLE + curPID*16 + 5] = semID;
+
+			//context switch
+			backup;
+			call MOD_5;
+			restore;
+
+		endwhile;
+
+		//free semaphore
+		[SEMAPHORE_TABLE + 4*semID] = curPID;
+		//success
+		[retaddrs] = 0;
+
+	else
+		//invalid semaphore dedscriptor
+		[retaddrs] = -1;
+	endif;	
+
+endif;
+
+if (sys_call_num == INT_SEMUNLOCK) then
+
+	//validity of semid
+	if ((semdesc >=0) && (semdesc <= 7) && ([UAPN*512 + 496 + 2*semdesc] == SEMAPHORE)) then
+		
+		semID = [UAPN*512 + 496 + 2*semdesc + 1];
+
+		//if semaphore locked
+		if ([SEMAPHORE_TABLE + 4*semID] != -1) then
+
+			//some other process locked the semaphore
+			if ([SEMAPHORE_TABLE + 4*semID] != curPID) then
+				//failure
+				[retaddrs] = -2;
+			else
+				//unlock semaphore
+				[SEMAPHORE_TABLE + 4*semID] = -1;
+
+				alias i R2;
+				i = 0;
+				//free the processes waiting for this semaphore
+				while (i < 16) do
+
+					if (([PROCESS_TABLE + i*16 + 4] == WAIT_SEMAPHORE) && ([PROCESS_TABLE + i*16 + 5] == semID)) then
+						[PROCESS_TABLE + i*16 + 4] = READY;	
+					endif;
+					i = i+1;
+
+				endwhile;
+					
+				//success
+				[retaddrs] = 0;
+
+			endif;
+
+		else
+			//success
+			//******
+			//not mentioned in the roadmap
+			//returning success
+			//even when none of the process had previously
+			//locked the semaphore
+			//*******
+			[retaddrs] = 0;
+		endif;
+
+	else
+		[retaddrs] = -1;
+	endif;	
+
+endif;
+
+[PROCESS_TABLE + curPID*16 + 9] = 0;
+
+SP = userSP;
+
+ireturn;

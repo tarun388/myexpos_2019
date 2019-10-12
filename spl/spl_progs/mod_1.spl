@@ -40,6 +40,27 @@ if (functionNum == FREE_USER_AREA_PAGE) then
 
 	alias UAPN R3;
 	UAPN = [PROCESS_TABLE + exitPID * 16 + 11];
+	alias i R4;
+	i = 496;
+	alias semID R5;
+
+	//release all the semaphore 
+	//which aren't released yet
+	while (i <= 511) do
+
+		if ([UAPN*512 + i] == SEMAPHORE) then
+			semID = [UAPN*512 + i+1];
+			backup;
+			R1 = RELEASE_SEMAPHORE;
+			R3 = exitPID;
+			R2 = semID; 
+			call MOD_0;
+			restore;	
+		endif;
+		i = i+2;
+
+	endwhile;	
+
 	backup;
 	R1 = RELEASE_PAGE;
 	R2 = UAPN;

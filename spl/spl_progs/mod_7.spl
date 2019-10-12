@@ -43,6 +43,14 @@ loadi(23,36);
 loadi(24,37);
 loadi(25,38);
 
+//Interrupt 13 Routine : Semget, Semrelease
+loadi(28,41);
+loadi(29,42);
+
+//Interrupt 14 Routine : SemLock, SemUnlock
+loadi(30,43);
+loadi(31,44);
+
 //Interrupt 15 routine : Shutdown
 loadi(32,45);
 loadi(33,46);
@@ -195,6 +203,19 @@ endwhile;
 							//81-82 for idle Page Table
 
 //-----------------------------------------------------------------------
+
+//-----------------initialize semaphore table----------------------------
+
+i = 0;
+while (i < 32) do
+
+	//locking pid -1
+	[SEMAPHORE_TABLE + i*4] = -1;
+	//process count ---> 0
+	[SEMAPHORE_TABLE + i*4 + 1] = 0;
+	i = i+1;
+
+endwhile;
 
 //Unlocking the Terminal
 [TERMINAL_STATUS_TABLE + 0] = 0;

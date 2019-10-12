@@ -73,7 +73,7 @@ if (sys_call_num == INT_SEMGET) then
 			//in the per process resource table entry
 			[UAPN*512 + i + 1] = R0;
 			//return the per process resource table entry index
-			[retaddrs] = i;
+			[retaddrs] = (i-496)/2;
 	
 		endif;
 	
@@ -83,30 +83,18 @@ endif;
 
 if (sys_call_num == INT_SEMRELEASE) then
 
-	alias semID R10;
+	alias semdesc R10;
 	
 	phy_pg_num = [PTBR + 2*(userSP-4)/512];
 	offset = (userSP-4)%512;
-	semID = [phy_pg_num*512 + offset]; 
+	semdesc = [phy_pg_num*512 + offset]; 
 
-	//valid SEMID
-	if ( (semID >=0) && (semID <= 7)) then
+	//valid semaphore descriptor
+	if ((semdesc >=0) && (semdesc <= 7) && ([UAPN*512 + 496 + 2*semdesc] == SEMAPHORE)) then
 
-		while (i <= 511) do
-			//valid entry in the
-			//peer process resource table
-			if (([UAPN*512 + i] == SEMAPHORE) && ([UAPN*512 + i+1] == semID)) then
-				break;
-			endif;	
-			i = i + 2;
-	
-		endwhile;
+			alias semID R11;
+			semID = [UAPN*512 + 496 + 2*semdesc + 1];
 
-		if (i > 511) then 
-			//invalid entry
-			//return -1
-			[retaddrs] = -1;
-		else
 			//invoke release semaphore
 			backup;
 			R1 = RELEASE_SEMAPHORE;
@@ -116,14 +104,12 @@ if (sys_call_num == INT_SEMRELEASE) then
 			restore;
 
 			//invalidate entry
-			[UAPN*512 + i] = -1;
+			[UAPN*512 + 496 + 2*semdesc] = -1;
 			//success
 			[retaddrs] = 0;
 
-		endif;
-
 	else
-		//invalid semid
+		//invalid semaphore descriptor
 		[retaddrs] = -1;
 	endif;
 

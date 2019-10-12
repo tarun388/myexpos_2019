@@ -32,6 +32,72 @@ if (functionNum == ACQUIRE_DISK) then
 
 endif;
 
+if (functionNum == ACQUIRE_SEMAPHORE) then
+
+	//don't know the use of passed pid
+	//as argument
+
+	alias i R3;
+	i = 0;
+	
+	//find the index of a free entry in semaphore table
+	while (i < MAX_SEM_COUNT) do
+	
+		//free entry is indicated by a proccess count of 0
+		if ([SEMAPHORE_TABLE + i+1] == 0) then
+			
+			//set the process count to 1
+			[SEMAPHORE_TABLE + i+1] = 1;
+			//locking pid to -1
+			[SEMAPHORE_TABLE + i] = -1;
+			//success
+			//return semaphore table index
+			retval = i/4;
+			return;
+
+		endif;
+		i = i+4;	
+	
+	endwhile;
+	
+	//if no free entry
+	retval = -1;
+	return;
+
+endif;
+
+if (functionNum == RELEASE_SEMAPHORE) then
+
+	alias semID R2;
+	alias curPID R3;
+	
+	//check the locking PID in the semaphore table
+	if ([SEMAPHORE_TABLE + 4*semID] == curPID) then
+
+		//set locking pid to -1
+		[SEMAPHORE_TABLE + 4*semID] = -1;
+
+		alias i R4;
+		i=0;
+		//wake up processes blocked by the semaphore
+		while (i < 16) do
+
+			if (([PROCESS_TABLE + i*16 + 4] == WAIT_SEMAPHORE) && ([PROCESS_TABLE + i*16 + 5] == semID)) then
+				[PROCESS_TABLE + i*16 + 4] = READY;
+			endif;
+			i = i+1;	
+	
+		endwhile;
+
+	endif;
+
+	//deccrement the process count of the semaphore
+	[SEMAPHORE_TABLE + 4*semID + 1] = [SEMAPHORE_TABLE + 4*semID + 1] - 1;
+	
+	return;
+
+endif;
+
 if (functionNum == 8) then
 //Acquire Terminal
 

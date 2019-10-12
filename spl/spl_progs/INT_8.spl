@@ -111,10 +111,18 @@ else
 	parent_pprt = [parent_procs_table + 11] * 512 + 496;
 	alias child_pprt R3;
 	child_pprt = [child_procs_table + 11] * 512 + 496;
+	alias j R8;
 
 	while (i < 16) do
 	
 		[child_pprt + i] = [parent_pprt + i];
+
+	//--------increment the process count int semaphore table-------------	
+		if ((i%2==0) && ([parent_pprt + i] == SEMAPHORE)) then
+			j = SEMAPHORE_TABLE + [parent_pprt + i+1]*4;
+			[j+1] = [j+1] + 1;	
+		endif;
+
 		i = i + 1;
 
 	endwhile;
