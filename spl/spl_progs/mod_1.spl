@@ -65,14 +65,47 @@ if (functionNum == EXIT_PROCESS) then
 
 	[PROCESS_TABLE + exitPID * 16 + 4] = TERMINATED;
 
+	//process only if
+	//call didn't come from
+	//exec
+	if ([PROCESS_TABLE + (exitPID * 16) + 9] != 9) then
+	
+		alias i R5;
+		i = 0;
+
+		//for all those processes
+		//whose parent process is
+		//the exiting process
+		// and are in wait list
+		//ready them
+		while (i < 16) do
+
+			if (([PROCESS_TABLE + (i*16) + 4] == WAIT_PROCESS) && ([PROCESS_TABLE + (i*16) + 5] == exitPID)) then
+			
+				[PROCESS_TABLE + (i*16) + 4] = READY;
+
+			endif;
+
+			//orpahn the child of current exiting process
+			if ([PROCESS_TABLE + (i*16) + 2] == exitPID) then
+					
+				[PROCESS_TABLE + (i*16) + 2] = -1;
+	
+			endif;
+			i = i + 1;
+	
+		endwhile;
+
+	endif;
+
 	return;
 
 endif;
 
 if  (functionNum == FREE_PAGE_TABLE) then
 
-	alias page_table_base R1;
-	R1 = PAGE_TABLE_BASE + exitPID * 20;
+	alias page_table_base R6;
+	R6 = PAGE_TABLE_BASE + exitPID * 20;
 	//invalidate the page table entries for the library
 	[page_table_base + 0] = -1;
 	[page_table_base + 1] = "0000";
@@ -89,6 +122,11 @@ if  (functionNum == FREE_PAGE_TABLE) then
 			backup;
 			R1 = RELEASE_PAGE;
 			R2 = [page_table_base + i];
+			//backup;
+			//print("###");
+			//print(R2);
+			//print("###");
+			//restore;
 			call MOD_2;
 			restore;
 			[page_table_base + i] = -1;

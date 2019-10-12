@@ -21,7 +21,7 @@ call MOD_1;
 
 multipop (R4,R5);
 
-breakpoint;
+//breakpoint;
 
 if (R0 == -1) then
 
@@ -121,7 +121,7 @@ else
 
 	//-------Child Process Per-Process Disk Map Table-------------
 
-	i = 2;
+	i = 0;
 	alias parent_dmt R2;
 	parent_dmt = DISK_MAP_TABLE + [parent_procs_table + 1] * 10;
 	alias child_dmt R3;
@@ -205,6 +205,6 @@ endif;
 SP = userSP;
 
 [parent_procs_table + 9] = 0;	
-breakpoint;
+
 ireturn;
 

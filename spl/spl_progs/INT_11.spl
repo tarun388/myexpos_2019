@@ -1,0 +1,130 @@
+//-------------------------------------INTERRUPT 11-------------------------------------------------------
+
+alias userSP R0;
+userSP = SP;
+
+alias process_table R7;
+//alias page_table R8;
+alias return_addrs R9;
+
+process_table = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16);
+//page_table = PTBR;
+
+[process_table + 13] = SP;
+
+SP = [process_table + 11] * 512 - 1;
+
+alias syscall R1;
+alias logical_page_num R2;
+alias offset R3;
+alias physical_page_num R4;
+alias physical_addrs R5;
+logical_page_num = (userSP - 5)/512;
+offset = (userSP - 5) % 512;
+physical_page_num = [PTBR + 2 * logical_page_num];
+physical_addrs = physical_page_num * 512 + offset;
+syscall = [physical_addrs];
+
+logical_page_num = (userSP-1)/512;
+offset = (userSP-1)%512;
+physical_page_num = [PTBR + (2*logical_page_num)];
+return_addrs = physical_page_num*512 + offset;
+
+//--------------------------Getpid System call---------------------------------
+if (syscall == 11) then
+
+	[process_table + 9] = 11;
+	//return PID of current process
+
+	[return_addrs] = [process_table + 1];
+	
+endif;
+
+//-------------------------Getppid System Call------------------------------------
+if (syscall == 12) then
+
+	[process_table + 9] = 12;
+	//return parent PID of current process
+
+	[return_addrs] = [process_table + 2];
+
+endif;
+
+//---------------------------Wait System Call----------------------------------
+if (syscall == 13) then
+
+	//Mode flag -----> 13
+	[process_table + 9] = 13;
+	
+	//Extract PID from user stack
+	//for which the given process
+	//will wait
+	logical_page_num = (userSP - 4) / 512;
+	offset = (userSP - 4) % 512;
+	physical_page_num = [PTBR + 2 * logical_page_num];
+	physical_addrs = physical_page_num * 512 + offset;
+	alias reqPID R6;
+	reqPID = [physical_addrs];
+	
+	//A process should not wait for itself 
+	//or a Terminated process
+	if ((reqPID == [SYSTEM_STATUS_TABLE + 1]) || ([PROCESS_TABLE + reqPID*16 + 4] == TERMINATED) || (reqPID<0) || (reqPID>15)) then
+
+		//store -1 as return value idicating failure
+		[return_addrs] = -1;
+
+		[process_table + 9] = 0;
+
+		SP = [process_table + 13];
+
+		ireturn;
+	endif;
+
+	//state of current process
+	//(WAIT_PROCESS, argument PID)
+	[process_table + 4] = WAIT_PROCESS;
+	[process_table + 5] = reqPID;
+
+	backup;
+	call MOD_5;
+	restore;
+
+	//The following step is executed only when the scheduler runs this process again,
+	//which in turn happens only when the state of the process becomes READY again
+	[return_addrs] = 0;
+
+endif;
+
+//---------------------------------signal system call-----------------------------------------------------
+if (syscall == 14) then
+
+	[process_table + 9] = 14;
+
+	alias i R6;
+	i = 0;	
+	
+	//Loop through all the process entry
+	//change state of process waiting for 
+	//the current process
+	while (i < 16) do
+
+		if (([PROCESS_TABLE + i*16 + 4] == WAIT_PROCESS) && ([PROCESS_TABLE + i*16 + 5] == [SYSTEM_STATUS_TABLE + 1])) then
+
+			[PROCESS_TABLE + i*16 + 4] = READY;
+
+		endif;  
+		i  = i + 1;
+	
+	endwhile;
+
+	//store 0 as return value 
+	//in the user stack
+	[return_addrs] = 0;
+
+endif;
+
+[process_table + 9] = 0;
+
+SP = [process_table + 13]; 
+
+ireturn;

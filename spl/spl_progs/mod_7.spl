@@ -39,6 +39,14 @@ loadi(21,34);
 loadi(22,35);
 loadi(23,36);
 
+//Interrupt 11 Routine : Getpid, Getppid, Wait, Signal
+loadi(24,37);
+loadi(25,38);
+
+//Interrupt 15 routine : Shutdown
+loadi(32,45);
+loadi(33,46);
+
 //Module 0 : Resource Manager
 loadi(40,53);
 loadi(41,54);
@@ -163,9 +171,9 @@ endwhile;
 //------------------updating MEMORY_FREE_LIST-----------------------------
 
 i = 0;
-while (i < MAX_MEM_PAGE) do
+while (i < 128) do
 
-	if (i < 83) then
+	if (i <= 82) then
 	
 		[MEMORY_FREE_LIST + i] = 1;
 
@@ -182,7 +190,7 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 
 //MEM_FREE_COUNT
-[SYSTEM_STATUS_TABLE + 2] = 128 - 83;			//1-75 resv for os 
+[SYSTEM_STATUS_TABLE + 2] = 45;			//1-75 resv for os 
 							//76-80 for INIT Page Table
 							//81-82 for idle Page Table
 
@@ -193,8 +201,6 @@ endwhile;
 
 //set the disk free
 [DISK_STATUS_TABLE] = 0;
-
-//breakpoint;
 
 return;
 

@@ -17,6 +17,10 @@ if (functionNum == GET_FREE_PAGE) then
 		restore;
 
 	endwhile;
+	
+//	if ([SYSTEM_STATUS_TABLE + 2] == 0) then
+//	print ("No memory");
+//	endif;
 
 	//There is a free page available
 	//decrement wait_mem_count
@@ -28,7 +32,7 @@ if (functionNum == GET_FREE_PAGE) then
 	multipush (R7);
 	alias i R7;
 	i = 76;
-	while (i < MAX_MEM_PAGE) do
+	while (i < 128) do
 			
 		if ([MEMORY_FREE_LIST + i] == 0) then
 
@@ -43,14 +47,22 @@ if (functionNum == GET_FREE_PAGE) then
 	R0 = i;					//return free page number
 	
 	multipop (R7);
+//	if(R0 == 128) then
+//	print(R0);
+//	endif;
 	return;
 
 endif;
 
 if (functionNum == RELEASE_PAGE) then
 
-	alias pagenum R2;
+	//alias pagenum R2;
 	//decremnet the entry in memory free list of the corresponding page
+	//backup;
+	//print("***");
+	//print (R2);
+	//print("***");
+	//restore;
 	[MEMORY_FREE_LIST + R2] = [MEMORY_FREE_LIST + R2] - 1; 
 
 	//if page becomes free then increment the mem_free_count , and wake up all processes with WAIT_MEM

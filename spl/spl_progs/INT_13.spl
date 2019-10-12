@@ -1,0 +1,136 @@
+//----------------------------------------INTERRUPT 13-----------------------------------------------------
+
+alias userSP R2;
+alias curPID R3;
+
+userSP = SP;
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1; 
+
+alias phy_pg_num R4;
+alias offset R5;
+alias sys_call_num R6; 
+
+phy_pg_num = [PTBR + 2*(userSP-5)/512];
+offset = (userSP-5)%512;
+sys_call_num = [phy_pg_num*512 + offset];
+
+//set the MODE Flag
+[PROCESS_TABLE + curPID*16 + 9] = sys_call_num;
+
+alias retaddrs R7;
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+alias i R8;
+alias UAPN R9;
+i=496;
+UAPN = [PROCESS_TABLE + curPID*16 + 11];
+	
+if (sys_call_num == INT_SEMGET) then
+
+	//Find the index of a free entry in the
+	//per process resource table
+	// semaphore descriptor or SEMID
+	while (i <= 511) do
+
+		if ([UAPN*512 + i] == -1) then
+			break;
+		endif;
+		i = i+2;
+
+	endwhile;	
+
+	if (i > 511) then
+		//if no free entry, then return -1
+		[retaddrs] = -1;
+	
+	else
+		//resource identifier field of the per process 
+		//resource table entry is set to 1
+		//to indicate that the resource is a semaphore
+		[UAPN*512 + i] = SEMAPHORE;
+
+		multipush(R2,R3,R7,R8,R9);
+		R2 = curPID; 
+		R1 = ACQUIRE_SEMAPHORE;
+		call MOD_0;
+		multipop(R2,R3,R7,R8,R9);
+
+		if (R0 == -1) then
+			//if there is no free semaphore
+			//return -2
+			[retaddrs] = -2;
+			//*******so that free entry doesn't go
+			//unused
+			[UAPN*512 + i] = -1;
+
+		else
+			//store the index of the semaphore table entry 
+			//in the per process resource table entry
+			[UAPN*512 + i + 1] = R0;
+			//return the per process resource table entry index
+			[retaddrs] = i;
+	
+		endif;
+	
+	endif;
+
+endif;
+
+if (sys_call_num == INT_SEMRELEASE) then
+
+	alias semID R10;
+	
+	phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	offset = (userSP-4)%512;
+	semID = [phy_pg_num*512 + offset]; 
+
+	//valid SEMID
+	if ( (semID >=0) && (semID <= 7)) then
+
+		while (i <= 511) do
+			//valid entry in the
+			//peer process resource table
+			if (([UAPN*512 + i] == SEMAPHORE) && ([UAPN*512 + i+1] == semID)) then
+				break;
+			endif;	
+			i = i + 2;
+	
+		endwhile;
+
+		if (i > 511) then 
+			//invalid entry
+			//return -1
+			[retaddrs] = -1;
+		else
+			//invoke release semaphore
+			backup;
+			R1 = RELEASE_SEMAPHORE;
+			R2 = semID;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+
+			//invalidate entry
+			[UAPN*512 + i] = -1;
+			//success
+			[retaddrs] = 0;
+
+		endif;
+
+	else
+		//invalid semid
+		[retaddrs] = -1;
+	endif;
+
+endif;
+
+[PROCESS_TABLE + curPID*16 + 9] = 0;
+
+SP = [PROCESS_TABLE + curPID*16 + 13];
+
+ireturn;
