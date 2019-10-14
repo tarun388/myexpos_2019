@@ -1,0 +1,18 @@
+int main(){
+decl
+	str filename;
+	int temp,ret,permission;
+enddecl
+
+begin
+	temp = exposcall("Read",-1,filename);
+	temp = exposcall("Read",-1,permission);
+	ret = exposcall("Create",filename,permission);
+	if (ret == 0) then
+		temp = exposcall("Write",-2,"Success");
+	else
+		temp = exposcall("Write",-2,"No free inode");
+	endif;
+	return 0;
+end
+}

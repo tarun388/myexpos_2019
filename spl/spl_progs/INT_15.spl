@@ -1,0 +1,67 @@
+//------------------------------------------INTERRUPT 15----------------------------------------------------
+//-------------------------------SHUTDOWN SYSTEM CALL----------------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias userSP R5;
+alias curPID R6;
+alias retaddrs R7;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+//MODE FLAG --> 21
+[PROCESS_TABLE + curPID*16 + 9] = 21;
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+if ((curPID != 1) || ([PROCESS_TABLE + curPID*16 + 3] != 1)) then
+	[retaddrs] = -1;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+endif;
+
+//commit changes made in memory copies of inodev table ,user table, root file, disk free list
+//disk free list
+backup;
+R1 = DISK_STORE;
+R2 = curPID;
+R3 = 61;
+R4 = 2;
+call MOD_4;
+restore;
+
+//inode + user table
+backup;
+R1 = DISK_STORE;
+R2 = curPID;
+R3 = 59;
+R4 = 3;
+call MOD_4;
+restore;
+
+//inode + user table
+backup;
+R1 = DISK_STORE;
+R2 = curPID;
+R3 = 60;
+R4 = 4;
+call MOD_4;
+restore;
+
+//root file
+backup;
+R1 = DISK_STORE;
+R2 = curPID;
+R3 = 62;
+R4 = 5;
+call MOD_4;
+restore;
+
+halt;

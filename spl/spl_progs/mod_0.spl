@@ -32,6 +32,71 @@ if (functionNum == ACQUIRE_DISK) then
 
 endif;
 
+if (functionNum == ACQUIRE_INODE) then
+
+	alias inodeindex R2;
+	alias curPID R3;
+	
+	//busy loop
+	//inode acquired by any other process
+	while ([FILE_STATUS_TABLE + 4*inodeindex] != -1) do
+		//wait list the process
+		[PROCESS_TABLE + curPID*16 + 4] = WAIT_FILE;
+		[PROCESS_TABLE + curPID*16 + 5] = inodeindex;
+		//context switch
+		backup;
+		call MOD_5;
+		restore;
+	endwhile;
+
+	//inode free
+
+	//some other process deleted the inode
+	//by the time this process
+	//was waiting
+	if ([INODE_TABLE + inodeindex*16 + 1] == -1) then
+		R0 = -1;
+		return;
+	endif;
+
+	//lock the inode
+	[FILE_STATUS_TABLE + 4*inodeindex] = curPID;
+	R0 = 0;
+	return;
+
+endif;
+
+if (functionNum == RELEASE_INODE) then
+
+	alias inodeindex R2;
+	alias curPID R3;
+
+	//pthis process has not locked the inode
+	if ([FILE_STATUS_TABLE + 4*inodeindex] != curPID) then
+		R0 = -1;
+		return;
+	endif;
+
+	//free the inode
+	[FILE_STATUS_TABLE + 4*inodeindex] = -1;
+	
+	alias i R5;
+	i = 0;
+
+	//wake up all the processes 
+	//waiting for the inode
+	while (i < MAX_PROC_NUM) do
+		if (([PROCESS_TABLE + i*16 + 4] == WAIT_FILE) && ([PROCESS_TABLE + i*16 + 5] == inodeindex)) then
+			[PROCESS_TABLE + i*16 + 4] = READY;
+		endif;
+		i = i+1;
+	endwhile;
+	
+	R0 = 0;
+	return;
+
+endif;
+
 if (functionNum == ACQUIRE_SEMAPHORE) then
 
 	//don't know the use of passed pid

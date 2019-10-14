@@ -1,0 +1,248 @@
+//-----------------------------------------INTERRUPT 4---------------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias curPID R6;
+alias userSP R7;
+alias sys_call_num R8;
+alias retaddrs R9;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+phy_pg_num = [PTBR + 2*(userSP-5)/512];
+offset = (userSP-5)%512;
+sys_call_num = [phy_pg_num*512 + offset];
+
+[PROCESS_TABLE + curPID*16 + 9] = sys_call_num;
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+if (sys_call_num == INT_CREATE) then
+
+	alias filename R10;
+	alias permission R11;
+	
+	phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	offset = (userSP-4)%512;
+	filename = [phy_pg_num*512 + offset];
+
+	alias i R12;
+	alias freeentry R13;
+	alias inode_filename R14;
+	i = 0;
+	freeentry = -1;
+	
+	while (i < MAX_FILE_NUM) do
+
+		inode_filename = [INODE_TABLE + 16*i + 1];
+		if (inode_filename == filename) then
+			break;
+		endif;
+		if ((inode_filename == -1) && (freeentry == -1)) then
+			freeentry = i;
+		endif;
+		i = i+1;
+
+	endwhile; 
+
+	if (i >= MAX_FILE_NUM) then
+
+		if (freeentry == -1) then
+			//no free entry found
+			//in inode table
+			[retaddrs] = -1;
+		else
+			//inode entry of file name
+			[INODE_TABLE + 16*freeentry + 1] = filename;
+			//file size --> 0
+			[INODE_TABLE + 16*freeentry + 2] = 0;
+			//file typr --> data
+			[INODE_TABLE + 16*freeentry] = DATA;
+			
+			//diskblocks entry -1
+			//no disk blocks are allocated
+			i = 0;
+			while (i<4) do
+				[INODE_TABLE + 16*freeentry + 8 + i] = -1;
+				i = i+1;
+			endwhile;
+			
+			//user id
+			alias userid R5;
+			userid =  [PROCESS_TABLE + curPID*16 + 3];
+			[INODE_TABLE + 16*freeentry + 3] = userid;
+			
+			phy_pg_num = [PTBR + 2*(userSP-3)/512];
+			offset = (userSP-3)%512;
+			permission = [phy_pg_num*512 + offset];
+			[INODE_TABLE + 16*freeentry + 4] = permission;
+
+			alias rootentry R4;
+			rootentry = ROOT_FILE + freeentry*8;
+	
+			//filename
+			[rootentry] = filename;
+			//file size
+			[rootentry + 1] = 0;
+			//file type
+			[rootentry + 2] = DATA;
+			//username
+			//find from correponding entry of user table
+			[rootentry + 3] = [USER_TABLE + 2*userid];
+			//permission
+			[rootentry + 4] = permission;
+	
+			//success
+			[retaddrs] = 0;
+		endif;
+	
+	else
+		//file is already present
+		[retaddrs] = 0;	
+	endif;
+
+endif; 
+
+if (sys_call_num == INT_DELETE) then
+
+	alias filename R10;
+
+	phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	offset = (userSP-4)%512;
+	filename = [phy_pg_num*512 + offset];
+
+	alias i R11;
+	alias inode_filename R12;
+	i = 0;
+	
+	while (i < MAX_FILE_NUM) do
+
+		inode_filename = [INODE_TABLE + 16*i + 1];
+		if (inode_filename == filename) then
+			break;
+		endif;
+		i = i+1;
+
+	endwhile; 
+
+	if (i < MAX_FILE_NUM) then
+
+		//check if file is of data type
+		if ([INODE_TABLE + 16*i] == DATA) then
+
+			//exclusive permission is set
+			if (([INODE_TABLE + 16*i + 4] == EXCLUSIVE)) then
+				
+				alias curuserid R12;
+				curuserid = [PROCESS_TABLE + curPID*16 + 3];
+				//current user is not root
+				//and
+				//current user does not own file
+				if ((curuserid != 0) && (curuserid != [INODE_TABLE +16*i + 3])) then
+					[retaddrs] = -1;
+					[PROCESS_TABLE + curPID*16 + 9] = 0;
+					SP = userSP;
+					ireturn;
+				endif;
+			
+			endif;
+
+			//acquire a lock on the file by calling acquire inode
+			backup;
+			R1 = ACQUIRE_INODE;
+			R2 = i;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+
+			//file open count is not -1
+			//file is open cannot be deleted
+			if ([FILE_STATUS_TABLE + i*4 + 1] != -1) then
+				
+				//release lock
+				backup;
+				R1 = RELEASE_INODE;
+				R2 = i;
+				R3 = curPID;
+				call MOD_0;
+				restore;
+
+				[retaddrs] = -2;
+				[PROCESS_TABLE + curPID*16 + 9] = 0;
+				SP = userSP;
+				ireturn;
+
+			endif;
+
+			alias j R12;
+			alias block_num R13;
+			alias buff_no R14;
+			j = 0;
+
+			while (j < 4) do
+
+				block_num = [INODE_TABLE + i*16 + 8 + j];
+				//disk block allocated to the file
+				if (block_num != -1) then
+			
+					buff_no = block_num % 4;
+					//disk block loaded into a buffer
+					//and
+					//dirty bit is set
+					if (([BUFFER_TABLE + buff_no] == block_num) && ([BUFFER_TABLE + buff_no + 1] == 1)) then
+						//reset the dirty bit
+						[BUFFER_TABLE + buff_no + 1] = 0;
+					endif;
+					//free the disk block
+					backup;
+					R1 = RELEASE_BLOCK;
+					R2 = block_num;
+					R3 = curPID;
+					call MOD_2;
+					restore;
+	
+				endif;
+				j = j+1;
+
+			endwhile;
+
+			//invalidate the inode table of file
+			[INODE_TABLE + i*16 + 1] = -1;
+
+			//invalidate root file 
+			[ROOT_FILE + i*8] = -1;
+
+			//release lock on inode
+			backup;
+			R1 = RELEASE_INODE;
+			R2 = i;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+
+			//success
+			[retaddrs] = 0;
+
+		else
+			//file is not of data type
+			[retaddrs] = -1;
+		endif;
+
+	else
+		//file does not exist
+		[retaddrs] = 0;
+	endif;
+
+endif; 
+
+[PROCESS_TABLE + curPID*16 + 9] = 0;
+
+SP = userSP;
+
+ireturn;

@@ -4,6 +4,36 @@
 alias functionNum R1;
 alias currentPID R2;
 
+if (functionNum == DISK_STORE) then
+
+	alias pagenum R3;
+	alias blocknum R4;
+
+	backup;
+	R1 = ACQUIRE_DISK;
+	R2 = currentPID;
+	call MOD_0;
+	restore;
+
+	//store bit
+	[DISK_STATUS_TABLE + 1] = 1;
+	//page number
+	[DISK_STATUS_TABLE + 2] = pagenum;
+	//block number
+	[DISK_STATUS_TABLE + 3] = blocknum;
+
+	store(pagenum,blocknum);
+	
+	[PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
+
+	backup;
+	call MOD_5;
+	restore;
+
+	return;
+
+endif;
+
 if (functionNum == DISK_LOAD) then
 	
 	alias pageNum R3;
