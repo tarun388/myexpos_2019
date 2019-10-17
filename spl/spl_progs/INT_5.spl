@@ -1,0 +1,117 @@
+//--------------------------------------------INTERRUPT 5--------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias userSP R5;
+alias curPID R6;
+alias sys_call_num R7;
+alias retaddrs R8;
+alias filename R9;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+phy_pg_num = [PTBR + 2*(userSP-5)/512];
+offset = (userSP-5)%512;
+sys_call_num = [phy_pg_num*512 + offset];
+
+[PROCESS_TABLE + curPID*16 + 9] = sys_call_num;
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+phy_pg_num = [PTBR + 2*(userSP-4)/512];
+offset = (userSP-4)%512;
+filename = [phy_pg_num*512 + offset];
+
+if (sys_call_num == INT_OPEN) then
+
+	alias filedesc R10;
+	alias UAPN R11;
+	UAPN = [PROCESS_TABLE + curPID*16 + 11];
+	filedesc = 0;
+	while (filedesc < 8) do
+		if ([UAPN*512 + 496 + 2*filedesc] == -1) then
+			//free entry found
+			//in per process resource table
+			break;
+		endif;
+		filedesc = filedesc+1;
+	endwhile;
+
+	if (filedesc >= 8) then
+		//Process has reached its limit of resources
+		[retaddrs] = -3;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	multipush(R5,R6,R7,R8,R9,R10,R11);
+	R1 = OPEN;
+	R2 = filename;
+	call MOD_3;
+	multipop(R5,R6,R7,R8,R9,R10,R11);
+
+	if ((R0 == -1) || (R0 == -2)) then
+		//-1 data file error i.e. given exec file
+		//-2 system has reached its limit of open files
+		[retaddrs] = R0;	
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	//resource identifier field set to file
+	[UAPN*512 + 496 + 2*filedesc] = FILE;
+	//open file table index field to the 
+	//open file table entry found
+	[UAPN*512 + 496 + 2*filedesc + 1] = R0;
+	
+	//index of the per process resource table
+	//success
+	[retaddrs] = filedesc;
+
+endif;
+
+if (sys_call_num == INT_CLOSE) then
+
+	alias filedesc R9;
+	alias UAPN R10;
+	UAPN = [PROCESS_TABLE + curPID*16 + 11];
+
+	if ((filedesc < 0) || (filedesc > 7) || ([UAPN*512 + 496 + filedesc*2] != FILE)) then
+		//invalid file descriptor
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	//index of the open file table entry 
+	//from per process resource table entry	
+	alias openindex R11;
+	openindex = [UAPN*512 + 496 + filedesc*2 + 1];
+
+	backup;
+	R1 = CLOSE;
+	R2 = openindex;
+	call MOD_3;
+	restore;
+
+	[UAPN*512 + 496 + filedesc*2] = -1;
+	
+	[retaddrs] = 0;
+
+endif;
+
+[PROCESS_TABLE + curPID*16 + 9] = 0;
+
+SP = userSP;
+
+ireturn;
+

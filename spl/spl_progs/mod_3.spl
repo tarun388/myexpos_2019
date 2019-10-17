@@ -1,0 +1,209 @@
+//------------------------------------MODULE 3-------------------------------------------------------------
+//-------------------------------------FILE MANAGER MODULE-------------------------------------------------
+
+alias functionNum R1;
+
+if (functionNum == BUFFERED_READ) then
+
+	alias blocknum R2;
+	alias blockoff R3;
+	alias memaddrs R4;
+
+	alias buffno R5;
+	alias curPID R6;
+	
+	curPID = [SYSTEM_STATUS_TABLE + 1];
+	buffno = blocknum%4;
+	
+	backup;
+	R1 = ACQUIRE_BUFFER;
+	R2 = buffno;
+	R3 = curPID;
+	call MOD_0;
+	restore; 
+
+	if ([BUFFER_TABLE + buffno*4] != blocknum) then
+		if ([BUFFER_TABLE + buffno*4 + 1] == 1) then
+			backup;
+			R1 = DISK_STORE;
+			R2 = curPID;
+			R3 = 71 + buffno;
+			R4 = [BUFFER_TABLE + buffno*4];
+			call MOD_4;
+			restore;
+			//mark the buffer clean
+			//block number
+			[BUFFER_TABLE + buffno*4] = -1;
+			//dirty bit
+			[BUFFER_TABLE + buffno*4 + 1] = -1;
+		endif;
+
+		backup;
+		R1 = DISK_LOAD;
+		R4 = blocknum;
+		R2 = curPID;
+		R3 = 71 + buffno;
+		call MOD_4;
+		restore;
+
+		//new disk block number
+		[BUFFER_TABLE + buffno*4] = blocknum;
+	endif;
+
+	//copy the contents
+	[memaddrs] = [(71+buffno)*512 + blockoff];
+
+	backup;
+	R1 = RELEASE_BUFFER;
+	R2 = buffno;
+	R3 = curPID;
+	call MOD_0;
+	restore;
+	
+	return;
+
+endif;
+
+if (functionNum == OPEN) then
+
+	alias filename R2;
+	alias inodeindex R3;
+	alias inodetable R4;
+	inodeindex = 0;
+	while (inodeindex < MAX_FILE_NUM) do
+		inodetable = INODE_TABLE + 16*inodeindex;
+		if ([inodetable + 1] == filename) then
+			break;
+		endif;
+		inodeindex = inodeindex+1;
+	endwhile;	
+
+	if (inodeindex >= MAX_FILE_NUM) then
+		R0 = -1;
+		return;
+	endif;
+
+	alias temp R5;
+	multipush(R2,R3);
+	R1 = ACQUIRE_INODE;
+	temp = filename;
+	R2 = inodeindex;
+	R3 = temp;
+	call MOD_3;
+	multipop(R2,R3);
+
+	if (R0 == -1) then
+		return;
+	endif;
+
+	inodetable = INODE_TABLE + 16*inodeindex;
+	if ([inodetable] == EXEC) then
+		backup;
+		R1 = RELEASE_INODE;
+		temp = filename;
+		R2 = inodeindex;
+		R3 = temp;
+		call MOD_0;
+		restore;
+		
+		R0 = -1;
+		return;
+	endif;
+
+	alias openfileindex R6;
+	alias openfiletable R7;
+	openfileindex = 0;
+	while (openfileindex < MAX_OPENFILE_NUM) do
+		openfiletable = OPEN_FILE_TABLE + 4*openfileindex;
+		if ([openfiletable] == -1) then
+			break;
+		endif;
+		openfileindex = openfileindex + 1;
+	endwhile;
+
+	if (openfileindex >= MAX_OPENFILE_NUM) then	
+		backup;
+		R1 = RELEASE_INODE;
+		temp = filename;
+		R2 = inodeindex;
+		R3 = temp;
+		call MOD_0;
+		restore;
+		
+		R0 = -2;
+		return;
+	endif;
+
+	if (filename == "root") then
+		[openfiletable] = INODE_ROOT;
+	else
+		alias fst R8;
+		fst = FILE_STATUS_TABLE + 4*inodeindex; 
+		if ([fst + 1] == -1) then
+			[fst + 1] = 1; 
+		else
+			[fst + 1] = [fst + 1] + 1;
+		endif;
+
+		[openfiletable] = inodeindex; 
+	endif;
+
+	//open instance count set to 1
+	[openfiletable + 1] = 1;
+	//lseek set to beginning of file
+	[openfiletable + 2] = 0;
+
+	backup;
+	R1 = RELEASE_INODE;
+	temp = filename;
+	R2 = inodeindex;
+	R3 = temp;
+	call MOD_0;
+	restore;
+
+	R0 = openfileindex;
+	return;	
+
+endif;
+
+if (functionNum == CLOSE) then
+
+	alias openfileindex R2;
+	alias inodeindex R3;
+	alias openfiletable R4;
+	alias fst R5;
+
+	openfiletable = OPEN_FILE_TABLE + openfileindex*4;
+
+	//index of inode table entry
+	inodeindex = [openfiletable];
+
+	fst = FILE_STATUS_TABLE + inodeindex*4;
+
+	//decrement the open instance count
+	[openfiletable + 1] = [openfiletable + 1] - 1;
+
+	//open instance count becomes 0
+	if ([openfiletable + 1] == 0) then
+		//file is not "root"
+		if ([openfiletable] != INODE_ROOT) then
+			//decrement the file open count
+			[fst + 1] = [fst + 1] - 1;
+		endif;
+		//file open count set to -1 if becomes 0
+		if ([fst + 1] == 0) then
+			[fst + 1] = -1;
+		endif;
+		//invalidate all entry in open file table
+		//inode index
+		[openfiletable] = -1;
+		//open instance count
+		[openfiletable + 1] = -1;
+		//lseek
+		[openfiletable + 2] = -1;
+		
+	endif;
+
+	return;
+
+endif;

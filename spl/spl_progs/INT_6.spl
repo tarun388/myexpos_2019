@@ -1,50 +1,163 @@
-//--------------------modification in STAGE 16------------------------------
+//----------------------------------INTERRUPT 6------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias curPID R5;
+alias userSP R6;
+alias retaddrs R7;
+alias filedescriptor R8;
+alias arg2 R9;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
 
 //MODE Flag of Current Process
 //set to 7
 //for read system call
+[PROCESS_TABLE + (curPID*16) + 9] = 7;
 
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 7;
-
-alias userSP R0;
 userSP = SP;
+[PROCESS_TABLE + (curPID*16) + 13] = SP;
+SP = [PROCESS_TABLE + (curPID*16) + 11]*512 - 1;
 
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+phy_pg_num = [PTBR + 2*(userSP-4)/512];
+offset = (userSP-4)%512;
+filedescriptor = [phy_pg_num*512 + offset];
 
-SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11] * 512 - 1;
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
 
+phy_pg_num = [PTBR + 2*(userSP-3)/512];
+offset = (userSP-3)%512;
+arg2 = [phy_pg_num*512 + offset];
 
-
-alias filedescriptor R1;
-filedescriptor = [ [PTBR + ((userSP-4)/512)*2]*512 + (userSP-4)%512 ];
-
-if (filedescriptor != -1) then
-
-	alias addrretval R2;
-	addrretval = [PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512;
-	[addrretval] = -1;
-else
+if (filedescriptor == -1) then
 	
 	backup;
-	R3 = [ [PTBR + ((userSP-3)/512)*2]*512 + (userSP-3)%512 ];
-	R1 = 4;		//TERMINAL READ function number--> 4
-	R2 = [SYSTEM_STATUS_TABLE + 1];
-
+	R1 = TERMINAL_READ;		//TERMINAL READ function number--> 4
+	R2 = curPID;
+	R3 = arg2;
 	call MOD_4;
-
 	restore;
 
-	alias addrretval R2;
-	addrretval = [PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512;
-	[addrretval] = 0;
+	//success
+	[retaddrs] = 0;
+
+else
+	alias UAPN R10;
+
+	UAPN = [PROCESS_TABLE + curPID*16 + 11];
+
+	if ((filedescriptor < 0) || (filedescriptor > 7) || ([UAPN*512 + 496 + 2*filedescriptor] != FILE)) then
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	alias openfileindex R11;
+	openfileindex = [UAPN*512 + 496 + 2*filedescriptor + 1];
+
+	alias inodeindex R12;
+	inodeindex = [OPEN_FILE_TABLE + 4*openfileindex];
+
+	multipush(R5,R6,R7,R7,R8,R9,R10,R11,R12);
+	R1 = ACQUIRE_INODE;
+	R2 = inodeindex;
+	R3 = curPID;
+	call MOD_0;
+	multipop(R5,R6,R7,R7,R8,R9,R10,R11,R12);	
+
+	if (R0 == -1) then
+		//coudn't acquire inode
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	alias lseek R13;
+
+	lseek = [OPEN_FILE_TABLE + 4*openfileindex + 2];
+
+	alias membuff R14;
+
+	phy_pg_num = [PTBR + 2*arg2/512];
+	offset = arg2%512;
+	membuff = phy_pg_num*512 + offset;	
+
+	if (inodeindex == INODE_ROOT) then
+
+		if (lseek == 480) then	
+			backup;
+			R1 = RELEASE_INODE;
+			R2 = inodeindex;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+				
+			[retaddrs] = -2;
+			[PROCESS_TABLE + curPID*16 + 9] = 0;
+			SP = userSP;
+			ireturn;
+		endif;		
+
+		[membuff] = [ROOT_FILE + lseek];
+
+		//increment the lseek position in the openfiletable
+		[OPEN_FILE_TABLE + 4*openfileindex + 2] = [OPEN_FILE_TABLE + 4*openfileindex + 2] + 1;
+
+	else
+
+		if (lseek == [INODE_TABLE + inodeindex*16 + 2]) then
+			backup;
+			R1 = RELEASE_INODE;
+			R2 = inodeindex;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+				
+			[retaddrs] = -2;
+			[PROCESS_TABLE + curPID*16 + 9] = 0;
+			SP = userSP;
+			ireturn;
+		endif;
+
+		alias blockindex R8;
+		blockindex = lseek/512;
+		alias blocknum R9;
+		blocknum = [INODE_TABLE + 16*inodeindex + 8 + blockindex];
+
+		alias blockoff R8;
+		blockoff = lseek%512;
+
+		backup;
+		R1 = BUFFERED_READ;
+		R2 = blocknum;
+		R3 = blockoff;
+		R4 = membuff;
+		call MOD_3;
+		restore;
+	
+		//increment the lseek position in the openfiletable
+		[OPEN_FILE_TABLE + 4*openfileindex + 2] = [OPEN_FILE_TABLE + 4*openfileindex + 2] + 1;	
+
+	endif;
+
+	backup;
+	R1 = RELEASE_INODE;
+	R2 = inodeindex;
+	R3 = curPID;
+	call MOD_0;
+	restore;
+	
+	[retaddrs] = 0;	
 
 endif;		
 
-
 //Reset MODE FLAG to 0
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 0;
+[PROCESS_TABLE + (curPID*16) + 9] = 0;
 
-SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13];
+SP = userSP;
 
 ireturn;
-//--------------------modification uptil STAGE 16----------------------------

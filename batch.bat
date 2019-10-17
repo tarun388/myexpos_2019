@@ -7,6 +7,7 @@ load --int=disk $HOME/myexpos/spl/spl_progs/disk.xsm
 load --int=console $HOME/myexpos/spl/spl_progs/console.xsm
 load --int=timer $HOME/myexpos/spl/spl_progs/sample_timer.xsm
 load --int=4 $HOME/myexpos/spl/spl_progs/INT_4.xsm
+load --int=5 $HOME/myexpos/spl/spl_progs/INT_5.xsm
 load --int=6 $HOME/myexpos/spl/spl_progs/INT_6.xsm
 load --int=7 $HOME/myexpos/spl/spl_progs/sample_int7.xsm
 load --int=8 $HOME/myexpos/spl/spl_progs/INT_8.xsm
@@ -19,6 +20,7 @@ load --int=15 $HOME/myexpos/spl/spl_progs/INT_15.xsm
 load --module 0 $HOME/myexpos/spl/spl_progs/mod_0.xsm
 load --module 1 $HOME/myexpos/spl/spl_progs/mod_1.xsm
 load --module 2 $HOME/myexpos/spl/spl_progs/mod_2.xsm
+load --module 3 $HOME/myexpos/spl/spl_progs/mod_3.xsm
 load --module 4 $HOME/myexpos/spl/spl_progs/mod_4.xsm
 load --module 5 $HOME/myexpos/spl/spl_progs/mod_5.xsm
 load --module 7 $HOME/myexpos/spl/spl_progs/mod_7.xsm
@@ -31,3 +33,7 @@ load --exec $HOME/myexpos/expl/expl_progs/ms_c.xsm
 load --exec $HOME/myexpos/expl/expl_progs/pid.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s23_a1.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s23_a2.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s24_a1.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s24_a2.xsm
+load --data $HOME/myexpos/sample.dat
+load --data $HOME/myexpos/numbers.dat

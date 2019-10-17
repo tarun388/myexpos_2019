@@ -23,6 +23,10 @@ loadi(9,22);
 loadi(10,23);
 loadi(11,24);
 
+//Interrupt 5 Routine : Seek, Open, Close
+loadi(12,25);
+loadi(13,26);
+
 //Interrupt 6 Routine : Read
 loadi(14,27);
 loadi(15,28);
@@ -70,6 +74,10 @@ loadi(43,56);
 //Module 2 : Memory Manager
 loadi(44,57);
 loadi(45,58);
+
+//Module 3 : File Manager Module
+loadi(46,59);
+loadi(47,60);
 
 //Module 4 : Device Manager
 loadi(48,61);
@@ -251,6 +259,17 @@ while (i < 4) do
 	[BUFFER_TABLE + i*4 + 2] = -1;
 	i = i+1;
 
+endwhile;
+
+//------------------------initialize open file table----------------------------
+
+i = 0;
+while (i < MAX_OPENFILE_NUM) do
+	//inode index
+	[OPEN_FILE_TABLE + 4*i]  = -1;
+	//open instance count
+	[OPEN_FILE_TABLE + 4*i + 1] = 0;
+	i = i+1;
 endwhile;
 
 //Unlocking the Terminal

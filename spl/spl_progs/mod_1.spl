@@ -46,6 +46,8 @@ if (functionNum == FREE_USER_AREA_PAGE) then
 
 	//release all the semaphore 
 	//which aren't released yet
+	//close all the files the process has opened
+	//and haven't closed explicitly
 	while (i <= 511) do
 
 		if ([UAPN*512 + i] == SEMAPHORE) then
@@ -57,6 +59,15 @@ if (functionNum == FREE_USER_AREA_PAGE) then
 			call MOD_0;
 			restore;	
 		endif;
+
+		if ([UAPN*512 + i] == FILE) then
+			backup;
+			R1 = CLOSE;
+			R2 = [UAPN*512 + i + 1];
+			call MOD_3;
+			restore;
+		endif;
+
 		i = i+2;
 
 	endwhile;	

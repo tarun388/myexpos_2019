@@ -1,0 +1,35 @@
+int main(){
+decl
+	str s,filename;
+	int temp,ret;
+	int filedesc;
+enddecl
+
+begin
+	temp = exposcall("Read",-1,filename);
+	filedesc = exposcall("Open",filename);
+	if (filedesc >=0) then
+		ret  = 0;
+		while (ret == 0) do
+			ret = exposcall("Read",filedesc,s);
+			if (ret == 0) then
+				temp = exposcall("Write",-2,s);
+			endif;
+		endwhile;
+	else
+		if (filedesc == -1) then
+			temp = exposcall("Write",-2,"Not found/ Data");
+			//return 0;
+		endif;
+		if (filedesc == -2) then
+			temp = exposcall("Write",-2,"System limit");
+			//return 0;
+		endif;
+		if (filedesc == -3) then
+			temp = exposcall("Write",-2,"Process limit");
+			//return 0;			
+		endif;
+	endif;
+	return 0;
+end
+}

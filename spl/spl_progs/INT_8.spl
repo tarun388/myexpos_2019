@@ -117,10 +117,16 @@ else
 	
 		[child_pprt + i] = [parent_pprt + i];
 
-	//--------increment the process count int semaphore table-------------	
+	//--------increment the process count in semaphore table-------------	
 		if ((i%2==0) && ([parent_pprt + i] == SEMAPHORE)) then
 			j = SEMAPHORE_TABLE + [parent_pprt + i+1]*4;
 			[j+1] = [j+1] + 1;	
+		endif;
+
+	//--------increment the open instance count in open file table------
+		if ((i%2==0) && ([parent_pprt + i] == FILE)) then
+			j = OPEN_FILE_TABLE + [parent_pprt + i+1]*4;
+			[j+1] = [j+1] + 1;
 		endif;
 
 		i = i + 1;
