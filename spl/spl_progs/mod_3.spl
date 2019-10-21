@@ -3,7 +3,7 @@
 
 alias functionNum R1;
 
-if (functionNum == BUFFERED_READ) then
+if ((functionNum == BUFFERED_READ) || (functionNum == BUFFERED_WRITE)) then
 
 	alias blocknum R2;
 	alias blockoff R3;
@@ -50,8 +50,18 @@ if (functionNum == BUFFERED_READ) then
 		[BUFFER_TABLE + buffno*4] = blocknum;
 	endif;
 
-	//copy the contents
-	[memaddrs] = [(71+buffno)*512 + blockoff];
+	if (functionNum == BUFFERED_READ) then
+		//read from the file
+		[memaddrs] = [(71+buffno)*512 + blockoff];
+	else
+		alias word R4;		
+
+		//Buffered write
+		//copy the contents into the file
+		[(71+buffno)*512 + blockoff] = word;
+		//set dirty bit
+		[BUFFER_TABLE + buffno*4 + 1] = 1;
+	endif;
 
 	backup;
 	R1 = RELEASE_BUFFER;

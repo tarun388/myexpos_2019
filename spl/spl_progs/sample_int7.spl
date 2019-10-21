@@ -1,57 +1,190 @@
+//----------------------------------------INTERRUPT 7---------------------------------------------------------
+//-------------------------------------WRITE SYSTEM CALL--------------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias curPID R5;
+alias userSP R6;
+alias filedesc R7;
+alias retaddrs R8;
+alias word R9;
+alias UAPN R10;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
 //set mode flag to sys call number 5 for write
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 5;
+[PROCESS_TABLE + (curPID * 16) + 9] = 5;
 
 //store SP
-alias userSP R0;
 userSP = SP;
 
 //save the SP in the user SP field of PT
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+[PROCESS_TABLE + (curPID * 16) + 13] = SP;
 
 //set the value of stack to beginning of kernel stack
-SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1 ;
+SP = [PROCESS_TABLE + (curPID * 16) + 11] * 512 - 1 ;
 
-//logical to physical address translation of stack entry
-alias physicalPageNum R1;
-alias offset R2;
-alias fileDescPhysicalAddr R3;
-physicalPageNum = [PTBR + 2 * ((userSP - 4)/512)];
+phy_pg_num = [PTBR + 2*(userSP - 4)/512];
 offset = (userSP - 4) % 512;
-fileDescPhysicalAddr = (physicalPageNum * 512) + offset;
-alias fileDescriptor R4;
-fileDescriptor = [fileDescPhysicalAddr];
+filedesc = [phy_pg_num*512 + offset];
 
-//check file descriptor validity 
-if (fileDescriptor != -2) then
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
 
-	alias physicalAddrRetVal R5;
-	physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
-	[physicalAddrRetVal] = -1;
+phy_pg_num = [PTBR + 2*(userSP-3)/512];
+offset = (userSP-3)%512;
+word = [phy_pg_num*512 + offset];
 
-else
-	alias word R6;
-	word = [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
+//------------------written to STDOUT---------------------------------
+if (filedesc == -2) then
 
-//-----------------------------modification in STAGE 15---------------------------
-	
 	backup;
 	R1 = TERMINAL_WRITE;			//Function number for terminal write is '3' passed through reg1
-	R2 = [SYSTEM_STATUS_TABLE + 1];		//PID of the current process in reg2
+	R2 = curPID;				//PID of the current process in reg2
 	R3 = word;				//word to be printed to the terminal in reg3
 	call MOD_4;	
 	restore;
 
-//--------------------------modification uptil STAGE 15----------------------------
-
-	alias physicalAddrRetVal R7;
-	physicalAddrRetVal = ([PTBR + 2 * (userSP - 1) / 512] * 512) + ((userSP - 1) % 512);
-	[physicalAddrRetVal] = 0;
+	//success
+	[retaddrs] = 0;
+	SP = userSP;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	ireturn;
+	
 endif;
 
-//restore SP
+//---------------write to file-----------------------------
+
+UAPN = [PROCESS_TABLE + curPID*16 + 11];
+
+if ((filedesc < 0) || (filedesc > 7) || ([UAPN*512 + 496 + 2*filedesc] != FILE)) then
+	//file descriptor invalid or no open file corresponding
+	//to this file descriptor	
+	[retaddrs] = -1;
+	SP = userSP;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	ireturn;
+endif;
+
+alias openindex R11;
+alias inodeindex R12;
+alias lseek R13;
+
+openindex = [UAPN*512 + 496 + 2*filedesc + 1];
+
+inodeindex = [OPEN_FILE_TABLE + 4*openindex];
+
+if (([PROCESS_TABLE + curPID*16 + 3] != 1) && ([PROCESS_TABLE + curPID*16 + 3] != [INODE_TABLE + 16*inodeindex + 3]) && ([INODE_TABLE + inodeindex*16 + 4] == EXCLUSIVE)) then
+	//current user is not root
+	//and current user does not own the file
+	//and exclusive permission is set
+	[retaddrs] = -3;
+	SP = userSP;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	ireturn;
+endif;
+
+multipush(R5,R6,R7,R8,R9,R10,R11,R12);
+R1 = ACQUIRE_INODE;
+R2 = inodeindex;
+R3 = curPID;
+call MOD_0;
+multipop(R5,R6,R7,R8,R9,R10,R11,R12);
+
+if (R0 == -1) then
+	//acquiring inode failed
+	[retaddrs] = -1;
+	SP = userSP;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	ireturn;
+endif;
+
+lseek = [OPEN_FILE_TABLE + 4*openindex + 2];
+ 
+//lseek position same as the maximum file size i.e. 2048
+if (lseek == MAX_FILE_SIZE) then
+	
+	backup;
+	R1 = RELEASE_INODE;
+	R2 = inodeindex;
+	R3 = curPID;
+	call MOD_0;
+	restore;
+
+	[retaddrs] = -2;
+	SP = userSP;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	ireturn;
+endif;
+
+if ((lseek%512 == 0) && (lseek == [INODE_TABLE + inodeindex*16 + 2])) then
+	
+	multipush(R5,R6,R7,R8,R9,R10,R11,R12,R13);
+	R1 = GET_FREE_BLOCK;
+	call MOD_2;
+	multipop(R5,R6,R7,R8,R9,R10,R11,R12,R13);
+
+	if (R0 == -1) then
+		backup;
+		R1 = RELEASE_INODE;
+		R2 = inodeindex;
+		R3 = curPID;
+		call MOD_0;
+		restore;
+
+		[retaddrs] = -2;
+		SP = userSP;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		ireturn;
+	endif;
+	//set the new disk block found in the 
+	//corresponding disk block field
+	[INODE_TABLE + inodeindex*16 + 8 + (lseek/512)] = R0;
+	
+endif;
+
+alias blockindex R14;
+alias blocknum R7;
+alias blockoff R10;
+
+//to which block write?
+blockindex = lseek / 512;
+//block number 
+blocknum = [INODE_TABLE + inodeindex*16 + 8 + blockindex];
+//offset in that block
+blockoff = lseek % 512;
+
+//write the word to the file buffer
+backup;
+R1 = BUFFERED_WRITE;
+R2 = blocknum;
+R3 = blockoff;
+R4 = word;
+call MOD_3;
+restore;
+
+//lseek equals file size
+if (lseek == [INODE_TABLE + inodeindex*16 + 2]) then
+	//increment the file size in inode table and root file
+	[INODE_TABLE + inodeindex*16 + 2] = [INODE_TABLE + inodeindex*16 + 2] + 1;
+	[ROOT_FILE + inodeindex*8 + 1] = [ROOT_FILE + inodeindex*8 + 1] + 1;  
+endif;
+
+//increment lseek in open file table
+[OPEN_FILE_TABLE + 4*openindex + 2] = [OPEN_FILE_TABLE + 4*openindex + 2] + 1;
+
+//release the inode
+backup;
+R1 = RELEASE_INODE;
+R2 = inodeindex;
+R3 = curPID;
+call MOD_0;
+restore;
+
+//success
+[retaddrs] = 0;
+
 SP = userSP;
-
-//reset the MODE FLAG
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
-
 ireturn;

@@ -109,6 +109,100 @@ if (sys_call_num == INT_CLOSE) then
 
 endif;
 
+if (sys_call_num == INT_SEEK) then
+
+	alias filedesc R9;
+	alias UAPN R10;
+	alias openindex R11;
+	alias inodeindex R12;
+	alias lseek R13;
+	alias filesize R14;
+	alias fileoffset R7;
+	
+	phy_pg_num = [PTBR + 2*(userSP-3)/512];
+	offset = (userSP-3)%512;
+	fileoffset = [phy_pg_num*512 + offset];
+	
+	phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	offset = (userSP-4)%512;
+	filedesc = [phy_pg_num*512 + offset];
+
+	UAPN = [PROCESS_TABLE + (curPID*16) + 11];
+	
+	if ((filedesc < 0) || (filedesc > 7) || ([UAPN*512 + 496 + filedesc*2] != FILE)) then
+		//invalid file descriptor
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+	
+	openindex = [UAPN*512 + 496 + filedesc*2 + 1];
+	
+	inodeindex = [OPEN_FILE_TABLE + 4*openindex];
+
+	multipush(R5,R6,R7,R8,R9,R10,R11,R12);
+	R1 = ACQUIRE_INODE;
+	R2 = inodeindex;
+	R3 = curPID;
+	call MOD_0;
+	multipop(R5,R6,R7,R8,R9,R10,R11,R12);
+	
+	if (R0 == -1) then
+		//couldn't acquire inode
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	lseek = [OPEN_FILE_TABLE + openindex*4 + 2];
+	
+	if (inodeindex == INODE_ROOT) then
+		filesize = 480;
+	else
+		filesize = [INODE_TABLE + inodeindex*16 + 2];
+	endif;
+
+
+	if (lseek + fileoffset < 0) then
+		backup;
+		R1 = RELEASE_INODE;
+		R2 = inodeindex;
+		R3 = curPID;
+		call MOD_0;
+		restore;
+	
+		//new lseek becomes negative
+		[retaddrs] = -2;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	if (fileoffset == 0) then
+		[OPEN_FILE_TABLE + openindex*4 + 2] = 0;
+	else
+		if (lseek + fileoffset > filesize) then
+			[OPEN_FILE_TABLE + openindex*4 + 2] = filesize;
+		else
+			[OPEN_FILE_TABLE + openindex*4 + 2] = lseek + fileoffset;
+		endif;
+	endif;
+
+	
+	backup;
+	R1 = RELEASE_INODE;
+	R2 = inodeindex;
+	R3 = curPID;
+	call MOD_0;
+	restore;
+
+	//success
+	[retaddrs] = 0;
+
+endif;
+
 [PROCESS_TABLE + curPID*16 + 9] = 0;
 
 SP = userSP;

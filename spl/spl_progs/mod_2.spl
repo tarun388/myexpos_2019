@@ -90,6 +90,32 @@ if (functionNum == RELEASE_PAGE) then
 
 endif;
 
+if (functionNum == GET_FREE_BLOCK) then
+
+	alias freeblock R5;
+	freeblock = DISK_FREE_AREA;
+
+	//loop through entries in the disk free list
+	//from disk_free_area to disk_swap_area-1
+	while (freeblock < DISK_SWAP_AREA) do
+	
+		if ([DISK_FREE_LIST + freeblock] == 0) then
+			R0 = freeblock;
+			//set to 1
+			[DISK_FREE_LIST + freeblock] = 1;
+			break;
+		endif;
+		freeblock = freeblock+1;	
+	
+	endwhile;
+
+	if (freeblock >= DISK_SWAP_AREA) then
+		R0 = -1;
+	endif;
+	return;
+
+endif;
+
 if (functionNum == RELEASE_BLOCK) then
 	
 	alias blocknum R2;

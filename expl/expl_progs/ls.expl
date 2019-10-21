@@ -1,0 +1,33 @@
+int main(){
+decl
+	int ret,temp,filedesc,a;
+	str filename; 
+enddecl
+begin
+	filedesc = exposcall("Open","root");
+
+	if ((filedesc == -2) OR (filedesc == -3)) then
+		temp = exposcall("Write",-2,"limit reach");
+	else
+		a = 1;
+		while (a==1) do
+			breakpoint;
+			ret = exposcall("Read",filedesc,filename);
+			if (ret != 0) then
+				break;
+			endif;
+			breakpoint;
+			if (filename != "-1") then
+				temp = exposcall("Write",-2,filename);
+			endif;
+			breakpoint;
+			ret = exposcall("Seek",filedesc,7);
+			if (ret != 0) then
+				break;
+			endif;
+		endwhile;
+		temp = exposcall("Close",filedesc);
+	endif;
+	return 0;
+end
+}

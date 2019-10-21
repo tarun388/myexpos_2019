@@ -1,5 +1,5 @@
 load --os $HOME/myexpos/spl/spl_progs/final_os_startup.xsm
-load --init $HOME/myexpos/expl/expl_progs/shell_v2.xsm
+load --init $HOME/myexpos/expl/expl_progs/extended_shell.xsm
 load --idle $HOME/myexpos/expl/expl_progs/idle.xsm
 load --exhandler $HOME/myexpos/spl/spl_progs/exception_handler.xsm
 load --library $HOME/myexpos/expl/library.lib
@@ -24,14 +24,14 @@ load --module 3 $HOME/myexpos/spl/spl_progs/mod_3.xsm
 load --module 4 $HOME/myexpos/spl/spl_progs/mod_4.xsm
 load --module 5 $HOME/myexpos/spl/spl_progs/mod_5.xsm
 load --module 7 $HOME/myexpos/spl/spl_progs/mod_7.xsm
-load --exec $HOME/myexpos/expl/expl_progs/ms_s.xsm
-load --exec $HOME/myexpos/expl/expl_progs/child.xsm
-load --exec $HOME/myexpos/expl/expl_progs/parent.xsm
-load --exec $HOME/myexpos/expl/expl_progs/s22_a1.xsm
-load --exec $HOME/myexpos/expl/expl_progs/s21_a2.xsm
-load --exec $HOME/myexpos/expl/expl_progs/ms_c.xsm
-load --exec $HOME/myexpos/expl/expl_progs/pid.xsm
-load --exec $HOME/myexpos/expl/expl_progs/s23_a1.xsm
+load --exec $HOME/myexpos/expl/expl_progs/ls.xsm
+load --exec $HOME/myexpos/expl/expl_progs/rm.xsm
+load --exec $HOME/myexpos/expl/expl_progs/cp.xsm
+load --exec $HOME/myexpos/expl/expl_progs/cat.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s25_a1.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s25_a2.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s25_a3.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s25_a4.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s23_a2.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s24_a1.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s24_a2.xsm

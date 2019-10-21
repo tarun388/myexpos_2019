@@ -192,3 +192,58 @@ if  (functionNum == FREE_PAGE_TABLE) then
 	return;
 
 endif;
+
+if (functionNum == KILL_ALL) then
+
+	alias curPID R2;
+
+	alias inodeindex R5;
+	inodeindex = 0;
+	while (inodeindex < MAX_FILE_NUM) do
+		//for valid inode entry
+		if ([INODE_TABLE + inodeindex*16 + 1] != 1) then
+			//lock that inode
+			backup;
+			R1 = ACQUIRE_INODE;
+			R2 = inodeindex;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+		endif;
+		inodeindex = inodeindex + 1;
+	endwhile;
+
+	alias pid R6;
+	//pid 0 and pid 1 are of idle and init
+	//which shouldn,t be killed
+	pid = 2;
+	
+	while (pid < MAX_PROC_NUM) do
+		if ((pid != curPID) && ([PROCESS_TABLE + pid*16 + 4] != TERMINATED)) then
+			backup;
+			R1 = EXIT_PROCESS;
+			R2 = pid;
+			call MOD_1;
+			restore;
+		endif;
+		pid = pid + 1;
+	endwhile;
+
+	inodeindex = 0;
+	while (inodeindex < MAX_FILE_NUM) do
+		//for valid inode entry
+		if ([INODE_TABLE + inodeindex*16 + 1] != 1) then
+			//release the lock
+			backup;
+			R1 = RELEASE_INODE;
+			R2 = inodeindex;
+			R3 = curPID;
+			call MOD_0;
+			restore;
+		endif;
+		inodeindex = inodeindex + 1;
+	endwhile;
+
+	return;
+
+endif;
