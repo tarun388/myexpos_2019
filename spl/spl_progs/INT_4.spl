@@ -144,7 +144,7 @@ if (sys_call_num == INT_DELETE) then
 				//current user is not root
 				//and
 				//current user does not own file
-				if ((curuserid != 0) && (curuserid != [INODE_TABLE +16*i + 3])) then
+				if ((curuserid != 1) && (curuserid != [INODE_TABLE +16*i + 3])) then
 					[retaddrs] = -1;
 					[PROCESS_TABLE + curPID*16 + 9] = 0;
 					SP = userSP;

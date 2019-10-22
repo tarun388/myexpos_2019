@@ -1,0 +1,291 @@
+//---------------------------------------------INTERRUPT 16-------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias curPID R5;
+alias userSP R6;
+alias sys_call_num R7;
+alias retaddrs R8;
+alias username R9;
+alias password R10;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+phy_pg_num = [PTBR + 2*(userSP-5)/512];
+offset = (userSP-5)%512;
+sys_call_num = [phy_pg_num*512 + offset];
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+[PROCESS_TABLE + curPID*16 + 9] = sys_call_num;
+
+phy_pg_num = [PTBR + 2*(userSP-4)/512];
+offset = (userSP-4)%512;
+username = [phy_pg_num*512 + offset];
+
+phy_pg_num = [PTBR + 2*(userSP-3)/512];
+offset = (userSP-3)%512;
+password = [phy_pg_num*512 + offset];
+
+if (sys_call_num == INT_NEWUSR) then
+	
+	//alias username R9;
+	//alias password R10;
+	alias userid R11;
+	
+	//current user should be root
+	//and current process should be shell
+	if (([SYSTEM_STATUS_TABLE] != 1) || (curPID != 2)) then
+		[retaddrs] = -2;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+	
+	alias freeentry R12;
+
+	//find a free entry in user table
+	userid = 0;
+	freeentry = -1;
+	while (userid < MAX_USER_NUM) do
+		//such a user already exist
+		if ([USER_TABLE + userid*2] == username) then
+			[retaddrs] = -1;
+			[PROCESS_TABLE + curPID*16 + 9] = 0;
+			SP = userSP;
+			ireturn;
+		endif;
+		//search for a free entry
+		if (([USER_TABLE + userid*2] == -1) && (freeentry == -1)) then
+			freeentry = userid;			
+		endif;
+		userid = userid + 1;
+	endwhile;
+
+	//no free entry
+	if (freeentry == -1) then
+		[retaddrs] = -3;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	userid = freeentry;
+
+	encrypt password;
+	
+	//username
+	[USER_TABLE + userid*2] = username;
+	//password
+	[USER_TABLE + userid*2 + 1] = password;
+
+	//success
+	[retaddrs] = 0;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+
+endif;
+
+if (sys_call_num == INT_REMUSR) then
+
+	//alias username R9;
+	alias userid R10;
+
+	//phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	//offset = (userSP-4)%512;
+	//username = [phy_pg_num*512 + offset];
+
+	//current user should be root
+	//and current process should be shell
+	if ([SYSTEM_STATUS_TABLE] != 1 || (curPID != 2)) then
+		[retaddrs] = -2;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	//cannot remove root and kernel
+	if ((username == "root") || (username == "kernel")) then
+		[retaddrs] = -2;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+	
+	//find the userid of the user
+	userid = 0;
+	while (userid < MAX_USER_NUM) do
+		if ([USER_TABLE + userid*2] == username) then
+			break;
+		endif;
+		userid = userid + 1;
+	endwhile;
+
+	//this user doesn't exist
+	if (userid >= MAX_USER_NUM) then
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	alias i R11;
+	i = 0;
+	while (i < MAX_FILE_NUM) do
+		//exit ,if this user is the owner of atleast one file
+		if (([ROOT_FILE + i*8] != -1) && ([ROOT_FILE + i*8 + 3] == username)) then
+			[retaddrs] = -3;
+			[PROCESS_TABLE + curPID*16 + 9] = 0;
+			SP = userSP;
+			ireturn;
+		endif;
+		i = i+1;
+	endwhile;
+
+	//not owner of any file on disk
+	//invalidate the corresponding user entry
+	[USER_TABLE + userid*2] = -1;
+	[USER_TABLE + userid*2 + 1] = -1;
+
+	//success
+	[retaddrs] = 0;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+
+endif;
+
+if (sys_call_num == INT_SETPWD) then
+
+	//alias username R9;
+	//alias password R10;
+	alias userid R11;
+
+	//phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	//offset = (userSP-4)%512;
+	//username = [phy_pg_num*512 + offset];
+
+	//phy_pg_num = [PTBR + 2*(userSP-3)/512];
+	//offset = (userSP-3)%512;
+	//password = [phy_pg_num*512 + offset];
+
+	//current process should be shell
+	if (curPID != 2) then
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	//find the userid of the user
+	userid = 0;
+	while (userid < MAX_USER_NUM) do
+		if ([USER_TABLE + userid*2] == username) then
+			break;
+		endif;
+		userid = userid + 1;
+	endwhile;
+
+	//this user doesn't exist
+	if (userid >= MAX_USER_NUM) then
+		[retaddrs] = -2;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+	
+	//userid of process not equal to whom we want to change
+	if ([PROCESS_TABLE + curPID*16 + 3] != userid) then
+		//cur user not root
+		if (userid != 1) then
+			[retaddrs] = -1;
+			[PROCESS_TABLE + curPID*16 + 9] = 0;
+			SP = userSP;
+			ireturn;
+		endif;
+	endif;
+
+	encrypt password;
+
+	//set the new password in user table
+	[USER_TABLE + userid*2 + 1] = password;
+
+	//success
+	[retaddrs] = 0;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+
+endif;
+
+if (sys_call_num == INT_GETUID) then
+
+	//alias username R9;
+	alias userid R10;
+
+	//phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	//offset = (userSP-4)%512;
+	//username = [phy_pg_num*512 + offset];
+
+	//find and return the userid of the user
+	userid = 0;
+	while (userid < MAX_USER_NUM) do
+		if ([USER_TABLE + userid*2] == username) then
+			[retaddrs] = userid;
+			[PROCESS_TABLE + curPID*16 + 9] = 0;
+			SP = userSP;
+			ireturn;
+		endif;
+		userid = userid + 1;
+	endwhile;
+
+	//user does not exist
+	[retaddrs] = -1;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+
+endif; 
+
+if (sys_call_num == INT_GETUNAME) then
+
+	alias userid R9;
+	alias username R10;
+
+	//phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	//offset = (userSP-4)%512;
+	//userid = [phy_pg_num*512 + offset];
+
+	//invalid userid
+	if ((userid < 0) || (userid >= MAX_USER_NUM)) then
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	//corresponding entry invalid
+	if ([USER_TABLE + userid*2] == -1) then
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
+		SP = userSP;
+		ireturn;
+	endif;
+
+	//fetch username
+	username = [USER_TABLE + userid*2];
+
+	//return username
+	[retaddrs] = username;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+
+endif;

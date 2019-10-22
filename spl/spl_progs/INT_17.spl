@@ -1,0 +1,90 @@
+//------------------------------------------INTERRUPT 17---------------------------------------------------
+//-----------------------------------------LOGIN SYSTEM CALL-------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias curPID R5;
+alias userSP R6;
+alias retaddrs R7;
+alias userid R8;
+alias username R9;
+alias password R10;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+[PROCESS_TABLE + curPID*16 + 9] = 27;
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+//current process is not login process
+//login systemcall can only by executed by login process i.e. pid 1
+if (curPID != 1) then
+	[retaddrs] = -2;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+endif;
+
+phy_pg_num = [PTBR + 2*(userSP-4)/512];
+offset = (userSP-4)%512;
+username = [phy_pg_num*512 + offset];
+
+phy_pg_num = [PTBR + 2*(userSP-3)/512];
+offset = (userSP-3)%512;
+password = [phy_pg_num*512 + offset];
+
+userid = 0;
+
+while (userid < MAX_USER_NUM) do
+	if ([USER_TABLE + 2*userid] == username) then
+		break;
+	endif;
+	userid = userid + 1;
+endwhile;
+	
+//no matching username
+if (userid >= MAX_USER_NUM) then
+	[retaddrs] = -1;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+endif;
+
+//encrypt the password supplied as input
+encrypt password;
+
+//password check
+if ([USER_TABLE + userid*2 + 1] != password) then
+	[retaddrs] = -1;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+endif;
+
+//process table of shell process
+//state
+[PROCESS_TABLE + 2*16 + 4] = CREATED;
+[PROCESS_TABLE + 2*16 + 3] = userid;
+
+//wait list the current process
+[PROCESS_TABLE + curPID*16 + 4] = WAIT_PROCESS;
+[PROCESS_TABLE + curPID*16 + 5] = 2;
+
+//update system status table
+//userid
+[SYSTEM_STATUS_TABLE] = userid;
+
+//context switch
+backup;
+call MOD_5;
+restore;
+
+[PROCESS_TABLE + curPID*16 + 9] = 0;
+SP = userSP;
+ireturn;

@@ -51,6 +51,10 @@ loadi(23,36);
 loadi(24,37);
 loadi(25,38);
 
+//Interrupt 12 Routine : Logout
+loadi(26,39);
+loadi(27,40);
+
 //Interrupt 13 Routine : Semget, Semrelease
 loadi(28,41);
 loadi(29,42);
@@ -62,6 +66,14 @@ loadi(31,44);
 //Interrupt 15 routine : Shutdown
 loadi(32,45);
 loadi(33,46);
+
+//Interrupt 16 Routine : Newusr, Remusr, Setpwd, Getuname, Getuid
+loadi(34,47);
+loadi(35,48);
+
+//Interrupt 17 Routine : Login
+loadi(36,49);
+loadi(37,50);
 
 //Module 0 : Resource Manager
 loadi(40,53);
@@ -101,9 +113,13 @@ loadi(62,5);
 loadi(63,13);
 loadi(64,14);
 
-//INIT
+//INIT/Login program
 loadi(65,7);
-loadi(66,8);
+//loadi(66,8);
+
+//Shell Program
+loadi(67,9);
+loadi(68,10);
 
 //--------------------------------------------------------------------
 
@@ -134,15 +150,85 @@ PTLR = 10;
 [PTBR+3] = "0100";
 
 //HEAP
-[PTBR+4] = 78;
-[PTBR+5] = "0110";
-[PTBR+6] = 79;
-[PTBR+7] = "0110";
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
 
 //CODE
 [PTBR+8] = 65;
 [PTBR+9] = "0100";
-[PTBR+10] = 66;
+[PTBR+10] = -1;
+[PTBR+11] = "0000";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//STACK
+[PTBR+16] = 66;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+[PROCESS_TABLE + 16 + 1] = 1;
+[PROCESS_TABLE + 16 + 3] = 0;		//temporary userid root
+[PROCESS_TABLE + 16 + 4] = CREATED;
+[PROCESS_TABLE + 16 + 11] = 77;		//UAPN
+[PROCESS_TABLE + 16 + 12] = 0;		//KPTR
+[PROCESS_TABLE + 16 + 13] = 8*512;	//UPTR
+[PROCESS_TABLE + 16 + 14] = PTBR;	//PTBR
+[PROCESS_TABLE + 16 + 15] = PTLR;	//PTLR 
+
+[66*512] = [65*512+1];		//ENTRY POINT
+
+//Initialize Per Process Resource Table of INIT
+alias i R0;
+i = 496;
+
+while (i <= 511) do
+
+	[77 * 512 + i] = -1;
+	i = i + 2;
+
+endwhile;
+
+//disk map table initialisation needed foe init process
+//Disk Map Table
+//i = 0;
+//while (i < 10) do
+
+//	[DISK_MAP_TABLE + 10 + i] = -1;
+//	i = i + 1;
+
+//endwhile;
+
+//[DISK_MAP_TABLE + 10 + 4] = 7;
+//[DISK_MAP_TABLE + 10 + 5] = 8;
+
+//------------------------------------------------------------------------
+
+//---------------------Initialising SHELL------------------------
+
+PTBR = PAGE_TABLE_BASE + 40;
+PTLR = 10;
+
+//LIBRARY
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+//HEAP
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+//CODE
+[PTBR+8] = 67;
+[PTBR+9] = "0100";
+[PTBR+10] = 68;
 [PTBR+11] = "0100";
 [PTBR+12] = -1;
 [PTBR+13] = "0000";
@@ -150,24 +236,23 @@ PTLR = 10;
 [PTBR+15] = "0000";
 
 //STACK
-[PTBR+16] = 76;
+[PTBR+16] = 78;
 [PTBR+17] = "0110";
-[PTBR+18] = 77;
+[PTBR+18] = 79;
 [PTBR+19] = "0110";
 
-[PROCESS_TABLE + 16 + 1] = 1;
-[PROCESS_TABLE + 16 + 3] = 1;		//temporary userid root
-[PROCESS_TABLE + 16 + 4] = CREATED;
-[PROCESS_TABLE + 16 + 11] = 80;		//UAPN
-[PROCESS_TABLE + 16 + 12] = 0;		//KPTR
-[PROCESS_TABLE + 16 + 13] = 8*512;	//UPTR
-[PROCESS_TABLE + 16 + 14] = PTBR;	//PTBR
-[PROCESS_TABLE + 16 + 15] = PTLR;	//PTLR 
+[PROCESS_TABLE + 32 + 1] = 2;
+[PROCESS_TABLE + 32 + 2] = 1;		//PPID
+[PROCESS_TABLE + 32 + 4] = TERMINATED;
+[PROCESS_TABLE + 32 + 11] = 80;		//UAPN
+[PROCESS_TABLE + 32 + 12] = 0;		//KPTR
+[PROCESS_TABLE + 32 + 13] = 8*512;	//UPTR
+[PROCESS_TABLE + 32 + 14] = PTBR;	//PTBR
+[PROCESS_TABLE + 32 + 15] = PTLR;	//PTLR 
 
-[76*512] = [65*512+1];		//ENTRY POINT
+[78*512] = [67*512+1];		//ENTRY POINT
 
-//Initialize Per Process Resource Table of INIT
-alias i R0;
+//Initialize Per Process Resource Table of Shell
 i = 496;
 
 while (i <= 511) do
@@ -177,27 +262,26 @@ while (i <= 511) do
 
 endwhile;
 
+//disk map table initialisation needed for shell process
 //Disk Map Table
 i = 0;
 while (i < 10) do
 
-	[DISK_MAP_TABLE + 10 + i] = -1;
+	[DISK_MAP_TABLE + 20 + i] = -1;
 	i = i + 1;
 
 endwhile;
 
-[DISK_MAP_TABLE + 10 + 4] = 7;
-[DISK_MAP_TABLE + 10 + 5] = 8;
+[DISK_MAP_TABLE + 20 + 4] = 9;
+[DISK_MAP_TABLE + 20 + 5] = 10;
 
-//------------------------------------------------------------------------
-
-
+//-----------------------------------------------------------------------
 //------------------updating MEMORY_FREE_LIST-----------------------------
 
 i = 0;
 while (i < 128) do
 
-	if (i <= 82) then
+	if (i <= 80) then
 	
 		[MEMORY_FREE_LIST + i] = 1;
 
@@ -214,9 +298,10 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 
 //MEM_FREE_COUNT
-[SYSTEM_STATUS_TABLE + 2] = 45;			//1-75 resv for os 
-							//76-80 for INIT Page Table
-							//81-82 for idle Page Table
+[SYSTEM_STATUS_TABLE + 2] = 47;			//1-75 resv for os 
+						//77 for INIT Page Table
+						//76 for idle Page Table
+						//78-80 for shell page table
 
 //-----------------------------------------------------------------------
 

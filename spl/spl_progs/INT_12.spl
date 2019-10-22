@@ -1,0 +1,71 @@
+//-----------------------------------------INTERRUPT 12-------------------------------------------------------
+//----------------------------------------LOGOUT SYSTEM CALL------------------------------------------------
+
+alias phy_pg_num R2;
+alias offset R3;
+alias curPID R5;
+alias userSP R6;
+alias retaddrs R8;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+userSP = SP;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
+
+[PROCESS_TABLE + curPID*16 + 9] = 28;
+
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+if (curPID != 2)  then
+	[retaddrs] = -1;
+	[PROCESS_TABLE + curPID*16 + 9] = 0;
+	SP = userSP;
+	ireturn;
+endif;
+
+
+//kill all the processes except
+//idle / init / cur process
+backup;
+R1 = KILL_ALL;
+R2 = curPID;
+call MOD_1;
+restore;
+
+
+//state of current process as terminated
+[PROCESS_TABLE + curPID*16 + 4] = TERMINATED;
+
+alias code1pg R9;
+alias stack1pg R10;
+
+code1pg = [PTBR + 8];
+stack1pg = [PTBR + 16];
+
+//entry point IP value from header
+//place on top of user stack
+[stack1pg*512] = [code1pg*512 + 1];
+
+//reset the usersp of the shell
+[PROCESS_TABLE + curPID*16 + 13] = 4096;
+
+//wake up the login process
+//i.e. init
+[PROCESS_TABLE + 16 + 4] = READY;
+
+//kernel
+[SYSTEM_STATUS_TABLE] = 0;
+
+backup;
+call MOD_5;
+restore;
+
+//on succcess logout system call
+//doesn't return anything
+
+//[PROCESS_TABLE + curPID*16 + 9] = 0;
+//SP = userSP;
+//ireturn;

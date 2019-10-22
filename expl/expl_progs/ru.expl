@@ -1,0 +1,42 @@
+int main(){
+decl
+	int temp,ret,userid,fd,filename,ret1;
+	str username,tempusrnm;
+enddecl
+begin
+	temp = exposcall("Read",-1,username);
+	userid = exposcall("Getuid",username);
+	if (userid != -1) then
+		fd = exposcall("Open","root");
+		if (fd >=0) then
+			ret = 0;
+			while (ret == 0) do
+				ret = exposcall("Read",fd,filename);
+				if (ret == 0) then
+					if (filename != -1) then
+						ret = exposcall("Seek",fd,2);
+						if (ret == 0) then
+							ret = exposcall("Read",fd,tempusrnm);
+							if (ret == 0) then
+								if (tempusrnm == username) then
+									temp = exposcall("Delete",filename);
+									//doing nothing if file is open
+								endif;
+								ret = exposcall("Seek",fd,4);
+							endif;
+						endif;
+					else
+						ret = exposcall("Seek",fd,8);
+					endif;
+				endif;
+			endwhile;
+			temp = exposcall("Close",fd);
+		else
+			temp = exposcall("Write",-2,"Error");
+		endif;
+	else
+		temp = exposcall("Write",-2,"Not exist");
+	endif;
+	return 0;
+end
+}

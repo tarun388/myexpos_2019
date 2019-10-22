@@ -23,8 +23,7 @@ retaddrs = phy_pg_num*512 + offset;
 //current process is not shell
 //or
 //current user is not root
-//**********for now since i load shell in init therefore pid 1
-if ((curPID != 1) || ([PROCESS_TABLE + curPID*16 + 3] != 1)) then
+if ((curPID != 2) || ([PROCESS_TABLE + curPID*16 + 3] != 1)) then
 	[retaddrs] = -1;
 	[PROCESS_TABLE + curPID*16 + 9] = 0;
 	SP = userSP;

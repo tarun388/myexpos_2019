@@ -1,0 +1,26 @@
+int main(){
+decl
+	int a,ret,temp;
+	str username,password;
+enddecl
+begin
+	a=1;
+	while (a==1) do
+		temp = exposcall("Write",-2,"USERNAME");
+		temp = exposcall("Read",-1,username);
+		temp = exposcall("Write",-2,"Password");
+		temp = exposcall("Read",-1,password);
+		breakpoint;
+		ret = exposcall("Login",username,password);
+		if (ret == -1) then
+			temp = exposcall("Write",-2,"Invalid");
+			temp = exposcall("Write",-2,"Credentials");
+		endif;
+		if (ret == -2) then	
+			temp = exposcall("Write",-2,"Permission");
+			temp = exposcall("Write",-2,"Denied");
+		endif;
+	endwhile;
+	return 0;
+end
+}
