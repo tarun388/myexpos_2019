@@ -14,23 +14,36 @@ cur_procs_table = PROCESS_TABLE + cur_pid*16 ;
 [cur_procs_table + 15] = PTLR;
 
 alias new_pid R2;
-new_pid = 0;	//DEFAULT PID TO 0
-
 alias temp_pid R3;
-temp_pid = cur_pid + 1;
 alias temp_mode R4;
 
-//breakpoint;
+new_pid = 0;	//DEFAULT PID TO 0
 
-//schedule the process starting from cur_pid + 1
-while(temp_pid < 16) do
-	temp_mode = [PROCESS_TABLE + temp_pid*16 + 4]; 
-	if( (temp_mode == READY) || (temp_mode == CREATED) ) then
-		new_pid = temp_pid;
-		break;
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+	//paging ongoing
+	if ([PROCESS_TABLE + SWAPPER_DAEMON*16 + 4] == WAIT_DISK) then
+		//schedule idle
+		new_pid = 0;		
+	else
+		//schedule swapper daemon
+		new_pid = SWAPPER_DAEMON;
 	endif;
-	temp_pid = temp_pid + 1;	
-endwhile; 
+else
+	//normal scheduling
+	//schedule the process starting from cur_pid + 1
+	temp_pid = cur_pid + 1;
+	//excluding swapper daemon
+	while(temp_pid < MAX_PROC_NUM-1) do
+		temp_mode = [PROCESS_TABLE + temp_pid*16 + 4]; 
+		//next non swapped process
+		//in ready or created state
+		if(((temp_mode == READY) || (temp_mode == CREATED)) && ([PROCESS_TABLE + temp_pid*16 + 6] == 0)) then
+			new_pid = temp_pid;
+			break;
+		endif;
+		temp_pid = temp_pid + 1;	
+	endwhile; 
+endif;
 
 //update PTBR,PTLR,PID
 SP = [PROCESS_TABLE + new_pid*16 + 11] * 512 + [PROCESS_TABLE + new_pid*16 + 12];

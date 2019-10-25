@@ -27,6 +27,7 @@ load --module 2 $HOME/myexpos/spl/spl_progs/mod_2.xsm
 load --module 3 $HOME/myexpos/spl/spl_progs/mod_3.xsm
 load --module 4 $HOME/myexpos/spl/spl_progs/mod_4.xsm
 load --module 5 $HOME/myexpos/spl/spl_progs/mod_5.xsm
+load --module 6 $HOME/myexpos/spl/spl_progs/mod_6.xsm
 load --module 7 $HOME/myexpos/spl/spl_progs/mod_7.xsm
 load --exec $HOME/myexpos/expl/expl_progs/ls.xsm
 load --exec $HOME/myexpos/expl/expl_progs/rm.xsm
@@ -41,5 +42,14 @@ load --exec $HOME/myexpos/expl/expl_progs/s25_a4.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s23_a2.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s24_a1.xsm
 load --exec $HOME/myexpos/expl/expl_progs/s24_a2.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s27_a1.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s27_a2.xsm
+load --exec $HOME/myexpos/expl/expl_progs/s27_a3.xsm
+load --exec $HOME/myexpos/expl/expl_progs/pgm1.xsm
+load --exec $HOME/myexpos/expl/expl_progs/pid.xsm
+load --exec $HOME/myexpos/expl/expl_progs/merge.xsm
+load --exec $HOME/myexpos/expl/expl_progs/m_store.xsm
+load --exec $HOME/myexpos/expl/expl_progs/m_sort.xsm
+load --exec $HOME/myexpos/expl/expl_progs/m_merge.xsm
 load --data $HOME/myexpos/sample.dat
 load --data $HOME/myexpos/numbers.dat

@@ -99,6 +99,10 @@ loadi(49,62);
 loadi(50,63);
 loadi(51,64);
 
+//Module 6 : Pager Module
+loadi(52,65);
+loadi(53,66);
+
 //Inode Table
 loadi(59,3);
 loadi(60,4);
@@ -281,7 +285,7 @@ endwhile;
 i = 0;
 while (i < 128) do
 
-	if (i <= 80) then
+	if (i <= 82) then
 	
 		[MEMORY_FREE_LIST + i] = 1;
 
@@ -298,14 +302,14 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 
 //MEM_FREE_COUNT
-[SYSTEM_STATUS_TABLE + 2] = 47;			//1-75 resv for os 
+[SYSTEM_STATUS_TABLE + 2] = 45;			//1-75 resv for os 
 						//77 for INIT Page Table
 						//76 for idle Page Table
 						//78-80 for shell page table
-
+						//81-82 swapper daemon
 //-----------------------------------------------------------------------
 
-//-----------------initialize semaphore table----------------------------
+//-----------------initialize semaphore/open file table----------------------------
 
 i = 0;
 while (i < 32) do
@@ -314,6 +318,12 @@ while (i < 32) do
 	[SEMAPHORE_TABLE + i*4] = -1;
 	//process count ---> 0
 	[SEMAPHORE_TABLE + i*4 + 1] = 0;
+	
+	//inode index
+	[OPEN_FILE_TABLE + 4*i]  = -1;
+	//open instance count
+	[OPEN_FILE_TABLE + 4*i + 1] = 0;
+	
 	i = i+1;
 
 endwhile;
@@ -346,14 +356,11 @@ while (i < 4) do
 
 endwhile;
 
-//------------------------initialize open file table----------------------------
+//-------------------------initialize tick field for every process--------------
 
 i = 0;
-while (i < MAX_OPENFILE_NUM) do
-	//inode index
-	[OPEN_FILE_TABLE + 4*i]  = -1;
-	//open instance count
-	[OPEN_FILE_TABLE + 4*i + 1] = 0;
+while (i < MAX_PROC_NUM) do
+	[PROCESS_TABLE + i*16] = 0;
 	i = i+1;
 endwhile;
 
@@ -363,5 +370,10 @@ endwhile;
 //set the disk free
 [DISK_STATUS_TABLE] = 0;
 
-return;
+//swapped count
+[SYSTEM_STATUS_TABLE + 4] = 0;
 
+//paging status
+[SYSTEM_STATUS_TABLE + 5] = 0;
+
+return;

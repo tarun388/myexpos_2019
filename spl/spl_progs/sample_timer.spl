@@ -7,6 +7,62 @@ SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
 //BACKUP THE PROCESS CONTEXT
 backup;
 
+alias curPID R5;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
+//swapping is initiated
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+	//swapping is ongoing
+
+	if ((curPID == SWAPPER_DAEMON) && ([SYSTEM_STATUS_TABLE + 5] == SWAP_OUT)) then
+		//current process is swapper daemon and status swap out
+		//call pager module
+		backup;
+		R1 = SWAP_OUT;
+		R2 = curPID;
+		call MOD_6;
+		restore;
+	else
+		if ((curPID == SWAPPER_DAEMON) && ([SYSTEM_STATUS_TABLE + 5] == SWAP_IN)) then	
+			//current process is swapper daemon and status swap in
+			//call pager module
+			backup;
+			R1 = SWAP_IN;
+			R2 = curPID;
+			call MOD_6;
+			restore;
+		endif;
+	endif;
+else
+	//check is swapping needs to initiated
+	if ([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+		//swap out to be invoked during next timer interrupt
+		[SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
+	else
+		//swapped out process count
+		if ([SYSTEM_STATUS_TABLE + 4] > 0) then
+			alias pid R6;
+			alias flag R7;
+
+			//tick of any swapped out process > max tick
+			//or
+			//mem free count > mem high
+			pid = 0;
+			while (pid < MAX_PROC_NUM) do
+				if (([PROCESS_TABLE + pid*16 + 6] == 1) && ([PROCESS_TABLE + pid*16] > MAX_TICK)) then
+					flag = 1;	
+				endif;
+				pid = pid+1;
+			endwhile;
+
+			if ((flag == 1) || ([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH)) then
+				[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+			endif;
+		endif; 
+	endif;
+endif;
+
 //STATE CHANGE RUNNING TO READY
 [PROCESS_TABLE +([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = READY;
 

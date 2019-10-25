@@ -1,0 +1,275 @@
+//-------------------------------------MODULE 6---------------------------------------------------------------
+//------------------------------------PAGER MODULE----------------------------------------------------------
+//breakpoint;
+alias functionNum R1;
+alias curPID R2;
+
+if (functionNum == SWAP_OUT) then
+
+	alias swap_pid R5;
+	alias procs_state R6;
+	alias high_tick R7;
+	
+	//choose a process to swap out
+	//other than idle, init, shell
+	swap_pid = 3;
+	while (swap_pid < MAX_PROC_NUM) do
+		if ([PROCESS_TABLE + swap_pid*16 + 6] == 0) then
+			//find a non swapped process
+			if ([PROCESS_TABLE + swap_pid*16 + 4] == WAIT_PROCESS) then
+				//waitlisted process
+				break;			
+			endif;
+		endif;
+		swap_pid = swap_pid+1;
+	endwhile;
+
+	if (swap_pid >= MAX_PROC_NUM) then
+		//there are no swapped process
+		//in the wait process state
+		//find process in wait semaphore
+		
+		//choose a process to swap out
+		//other than idle, init, shell
+		swap_pid = 3;
+		while (swap_pid < MAX_PROC_NUM) do
+			if ([PROCESS_TABLE + swap_pid*16 + 6] == 0) then
+				//find a non swapped process
+				if ([PROCESS_TABLE + swap_pid*16 + 4] == WAIT_SEMAPHORE) then
+					//waitlisted process
+					break;			
+				endif;
+			endif;
+			swap_pid = swap_pid+1;
+		endwhile;
+	endif;
+
+	if (swap_pid >= MAX_PROC_NUM) then
+		//there are no swapped process
+		//in the wait process state
+		//and wait semaphore state
+
+		//find a non swapped process with
+		//highest tick
+		//which is not running,terminated allocated or swapped
+		alias req_pid R8;
+		req_pid = 3;
+		high_tick = -1;
+		while (req_pid < MAX_PROC_NUM) do
+			procs_state = [PROCESS_TABLE + req_pid*16 + 4];
+			if ([PROCESS_TABLE + req_pid*16 + 6] == 0) then
+				//find a non swapped process
+				if ((procs_state != RUNNING) && (procs_state != TERMINATED) && (procs_state != ALLOCATED)) then
+					if ([PROCESS_TABLE + req_pid*16] > high_tick) then
+						//process with max tick
+						high_tick = [PROCESS_TABLE + req_pid*16];
+						swap_pid = req_pid;
+					endif;			
+				endif;
+			endif;
+			req_pid = req_pid+1;
+		endwhile;
+	endif;
+
+	if (swap_pid >= MAX_PROC_NUM) then
+		//no such process exist
+		[SYSTEM_STATUS_TABLE + 5] = 0;
+		return;
+	endif;
+
+	//selected swap_pid process for swap out
+	//set tick ---> 0
+	[PROCESS_TABLE + swap_pid*16] = 0;
+
+	alias page_table R6;
+	alias i R7;
+
+	//deallocate the valid code pages
+	//invalidate the page table
+	page_table = PAGE_TABLE_BASE + swap_pid*20;
+	i = 4;
+	while (i < 8) do
+		if ([page_table + i*2] != -1) then
+			backup;
+			R1 = RELEASE_PAGE;
+			R2 = [page_table + i*2];
+			call MOD_2;
+			restore;
+			[page_table + i*2] = -1;
+			[page_table + i*2 + 1] = "0000";
+		endif;
+		i = i+1;
+	endwhile;	
+//breakpoint;	
+	alias pg_num R8;
+	
+	i = 2;
+	while (i < 3) do
+		//valid unshared heap page
+		pg_num = [page_table + i*2];
+		if ((pg_num != -1) && (MEMORY_FREE_LIST + pg_num == 1)) then
+			//free swap block
+			multipush(R5,R6,R7,R8);
+			R1 = GET_SWAP_BLOCK;
+			call MOD_2;
+			multipop(R5,R6,R7,R8);
+
+			//update disk map table
+			[DISK_MAP_TABLE + swap_pid*10 + i] = R0;
+			
+			//store heap page on the disk
+			backup;
+			R1 = DISK_STORE;
+			R2 = curPID;
+			R3 = pg_num;
+			R4 = R0;
+			call MOD_4;
+			restore;
+
+			backup;
+			R1 = RELEASE_PAGE;
+			R2 = pg_num;
+			call MOD_2;
+			restore;
+			
+			[page_table + i*2] = -1;
+			[page_table + i*2 + 1] = "0000";
+		endif;
+		i = i+1;
+	endwhile;	
+//breakpoint;
+	i = 8;
+	while (i < 10) do
+		pg_num = [page_table + i*2];
+			//free swap block
+			multipush(R5,R6,R7,R8);
+			R1 = GET_SWAP_BLOCK;
+			call MOD_2;
+			multipop(R5,R6,R7,R8);
+
+			//update disk map table
+			[DISK_MAP_TABLE + swap_pid*10 + i] = R0;
+			
+			//store heap page on the disk
+			backup;
+			R1 = DISK_STORE;
+			R2 = curPID;
+			R3 = pg_num;
+			R4 = R0;
+			call MOD_4;
+			restore;
+
+			backup;
+			R1 = RELEASE_PAGE;
+			R2 = pg_num;
+			call MOD_2;
+			restore;
+			
+			[page_table + i*2] = -1;
+			[page_table + i*2 + 1] = "0000";
+		i = i+1;
+	endwhile;
+
+	//set swap flag
+	[PROCESS_TABLE + swap_pid*16 + 6] = 1;
+	
+	//increment swap count
+	[SYSTEM_STATUS_TABLE + 4] = [SYSTEM_STATUS_TABLE + 4] + 1;
+
+	//paging status
+	[SYSTEM_STATUS_TABLE + 5] = 0;
+//breakpoint;
+	return;
+endif;
+
+if (functionNum == SWAP_IN) then
+
+	alias swap_pid R5;
+	alias high_tick R6;
+	alias pid R7;
+
+	high_tick = -1;
+	pid = 3;
+	while (pid < MAX_PROC_NUM) do
+		if (([PROCESS_TABLE + pid*16 + 6] == 1) && ([PROCESS_TABLE + pid*16 + 4] == READY)) then
+			if ([PROCESS_TABLE + pid*16] > high_tick) then
+				high_tick = [PROCESS_TABLE + pid*16];
+				swap_pid = pid;
+			endif;
+		endif;
+		pid = pid + 1;
+	endwhile;
+
+	if (high_tick == -1) then
+		[SYSTEM_STATUS_TABLE + 5] = 0;
+		return;
+	endif;
+
+	//reset tick
+	[PROCESS_TABLE + swap_pid*16] = 0;
+
+	alias page_table R6;
+	alias i R7;
+	alias flag R8;
+
+	i = 2;
+	page_table = PAGE_TABLE_BASE + swap_pid*20;
+
+	while (i < 10) do
+		//swapped out heap pages
+		//and
+		//user stack pages
+		if ((i==2) || (i==3) || (i==8) || (i==9)) then
+			flag = 0;
+			if ((i==2) || (i==3)) then
+				if ([DISK_MAP_TABLE + swap_pid*10 + i] != -1) then
+					flag = 1;
+				endif;
+			else
+				flag = 1;
+			endif;
+			if (flag == 1) then
+//breakpoint;
+				multipush(R5,R6,R7,R8);
+				R1 = GET_FREE_PAGE;
+				call MOD_2;
+				multipop(R5,R6,R7,R8);
+//breakpoint;				
+				backup;
+				R1 = DISK_LOAD;
+				R2 = curPID;
+				R3 = R0;
+				R4 = [DISK_MAP_TABLE + swap_pid*10 + i];
+				call MOD_4;
+				restore;
+//breakpoint;
+				backup;
+				R1 = RELEASE_BLOCK;
+				R2 = [DISK_MAP_TABLE + swap_pid*10 + i];
+				R3 = curPID;
+				call MOD_2;
+				restore;
+//breakpoint;
+				//invalidate disk map table
+				[DISK_MAP_TABLE + swap_pid*10 + i] = -1;
+
+				//validate page table
+				[page_table + i*2] = R0;
+				[page_table + i*2 + 1] = "0110";
+			endif;
+		endif;
+		i = i+1;
+	endwhile;
+
+	//reset swap flag
+	[PROCESS_TABLE + swap_pid*16 + 6] = 0;
+
+	//decrement swap count
+	[SYSTEM_STATUS_TABLE + 4] = [SYSTEM_STATUS_TABLE + 4] - 1;
+
+	//paging status
+	[SYSTEM_STATUS_TABLE + 5] = 0;
+
+	return;
+
+endif;

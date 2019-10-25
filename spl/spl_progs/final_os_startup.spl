@@ -8,7 +8,7 @@ loadi(69,11);
 loadi(54,67);
 loadi(55,68);
 
-SP = 82*512 - 1;
+SP = 76*512 - 1;
 
 //BOOT MODULE
 call MOD_7;
@@ -16,7 +16,7 @@ call MOD_7;
 PTBR = PAGE_TABLE_BASE;
 PTLR = 10;
 
-//IDLE PROCESS
+//----------------------------IDLE PROCESS---------------------------
 
 //LIBRARY
 [PTBR+0] = -1;
@@ -46,7 +46,9 @@ PTLR = 10;
 [PTBR+18] = -1;
 [PTBR+19] = "0000";
 
+[PROCESS_TABLE + 0] = 0;	//tick
 [PROCESS_TABLE + 1] = 0;	//PID OF IDLE 0;
+[PROCESS_TABLE + 3] = 0;	//userid --> kernel
 [PROCESS_TABLE + 4] = RUNNING;	//STATE
 [PROCESS_TABLE + 11] = 76;	//UAPN
 [PROCESS_TABLE + 12] = 0;	//KPTR
@@ -56,8 +58,55 @@ PTLR = 10;
 
 [70*512] = [69*512+1];		//ENTRY POINT
 
+//------------------------SWAPPER DAEMON----------------------------------------
+
+PTBR = PAGE_TABLE_BASE + 20*15;
+PTLR = 10;
+
+//LIBRARY
+[PTBR+0] = -1;
+[PTBR+1] = "0000";
+[PTBR+2] = -1;
+[PTBR+3] = "0000";
+
+//HEAP
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+//CODE
+[PTBR+8] = 69;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0000";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//STACK
+[PTBR+16] = 81;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+[PROCESS_TABLE + 15*16 + 0] = 0;	//tick
+[PROCESS_TABLE + 15*16 + 1] = 15;	//PID OF swapper daemon
+[PROCESS_TABLE + 15*16 + 3] = 0;	//userid --> kernel
+[PROCESS_TABLE + 15*16 + 4] = CREATED;	//STATE
+[PROCESS_TABLE + 15*16 + 11] = 82;	//UAPN
+[PROCESS_TABLE + 15*16 + 12] = 0;	//KPTR
+[PROCESS_TABLE + 15*16 + 13] = 8*512;	//UPTR
+[PROCESS_TABLE + 15*16 + 14] = PTBR;	//PTBR
+[PROCESS_TABLE + 15*16 + 15] = PTLR;	//PTLR
+
+[81*512] = [69*512+1];		//ENTRY POINT
+
+//------------------------------------------------------------------
+
 SP = 8*512;
-
 [SYSTEM_STATUS_TABLE + 1] = 0;		//CURRENT PID
-
+PTBR = PAGE_TABLE_BASE;
+PTLR = 10;
 ireturn;
