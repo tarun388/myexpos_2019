@@ -8,18 +8,13 @@ begin
 	fd1 = exposcall("Open",filename1);
 	if ((fd1 >= 0) AND (fd1 <= 7)) then
 		temp = exposcall("Read",-1,filename2);
-		breakpoint;
 		ret = exposcall("Create",filename2);
-		breakpoint;
 		if (ret == 0) then
-			breakpoint;
 			fd2 = exposcall("Open",filename2);
-			breakpoint;
 			if ((fd2 >= 0) AND (fd2 <= 7)) then
 				ret = 0;
 				while (ret == 0) do
 					ret = exposcall("Read",fd1,word);
-					//temp = exposcall("Write",-2,word);
 					if (ret == 0) then
 						temp = exposcall("Write",fd2,word); 
 					endif;	

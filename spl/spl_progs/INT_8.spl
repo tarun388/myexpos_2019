@@ -21,8 +21,6 @@ call MOD_1;
 
 multipop (R4,R5);
 
-//breakpoint;
-
 if (R0 == -1) then
 
 	//No free entry found
@@ -160,7 +158,7 @@ else
 		alias pg_num R2;
 		pg_num = [PTBR + i];
 		[child_page_table + i] = pg_num;
-		if (pg_num != -1) then
+		if ((pg_num != -1) && (pg_num != 0) && (pg_num != 1)) then
 			[MEMORY_FREE_LIST + pg_num] = [MEMORY_FREE_LIST + pg_num] + 1;
 		endif;
 		[child_page_table + i + 1] = [PTBR + i + 1];

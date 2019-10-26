@@ -4,22 +4,14 @@ int main()
 		int ret;
 	enddecl
 	begin
-		breakpoint;
 		ret = exposcall("Fork");
 		if(ret != -1) then
-			breakpoint;
 			ret = exposcall("Fork");
 			if(ret != -1) then
-				breakpoint;
 				ret = exposcall("Fork");
 				if(ret != -1) then
-					breakpoint;
 					ret = exposcall("Fork");
-					if (ret != -1) then
-						breakpoint;
-						ret = exposcall("Exec","pid.xsm");
-						//breakpoint;
-					else
+					if (ret == -1) then
 						ret = exposcall("Write",-2,"FORK ERROR4");
 					endif;
 				else
@@ -31,6 +23,7 @@ int main()
 		else
 			ret = exposcall("Write",-2,"FORK ERROR1");
 		endif;
+		ret = exposcall("Exec","pid.xsm");
 		return 0;
 	end
 }

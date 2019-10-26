@@ -11,16 +11,13 @@ begin
 	else
 		a = 1;
 		while (a==1) do
-			breakpoint;
 			ret = exposcall("Read",filedesc,filename);
 			if (ret != 0) then
 				break;
 			endif;
-			breakpoint;
 			if (filename != "-1") then
 				temp = exposcall("Write",-2,filename);
 			endif;
-			breakpoint;
 			ret = exposcall("Seek",filedesc,7);
 			if (ret != 0) then
 				break;

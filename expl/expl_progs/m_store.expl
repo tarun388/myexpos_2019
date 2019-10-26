@@ -38,7 +38,6 @@ enddecl
 
 begin
   x=initialize();
-
   pid=exposcall("Fork");
   if(pid!=0) then
     while(pid<13) do
@@ -51,7 +50,6 @@ begin
     x=exposcall("Fork");
 
     pid=exposcall("Getpid");
-
     if(pid==5) then
       file="temp1.dat";
     endif;

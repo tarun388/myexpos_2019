@@ -1,6 +1,5 @@
 //-------------------------------------MODULE 6---------------------------------------------------------------
 //------------------------------------PAGER MODULE----------------------------------------------------------
-//breakpoint;
 alias functionNum R1;
 alias curPID R2;
 
@@ -100,19 +99,18 @@ if (functionNum == SWAP_OUT) then
 		endif;
 		i = i+1;
 	endwhile;	
-//breakpoint;	
 	alias pg_num R8;
 	
 	i = 2;
-	while (i < 3) do
+	while (i < 4) do
 		//valid unshared heap page
 		pg_num = [page_table + i*2];
-		if ((pg_num != -1) && (MEMORY_FREE_LIST + pg_num == 1)) then
+		if ((pg_num != -1) && ([MEMORY_FREE_LIST + pg_num] == 1)) then
 			//free swap block
-			multipush(R5,R6,R7,R8);
+			multipush(R2,R5,R6,R7,R8);
 			R1 = GET_SWAP_BLOCK;
 			call MOD_2;
-			multipop(R5,R6,R7,R8);
+			multipop(R2,R5,R6,R7,R8);
 
 			//update disk map table
 			[DISK_MAP_TABLE + swap_pid*10 + i] = R0;
@@ -137,15 +135,15 @@ if (functionNum == SWAP_OUT) then
 		endif;
 		i = i+1;
 	endwhile;	
-//breakpoint;
+	
 	i = 8;
 	while (i < 10) do
 		pg_num = [page_table + i*2];
 			//free swap block
-			multipush(R5,R6,R7,R8);
+			multipush(R2,R5,R6,R7,R8);
 			R1 = GET_SWAP_BLOCK;
 			call MOD_2;
-			multipop(R5,R6,R7,R8);
+			multipop(R2,R5,R6,R7,R8);
 
 			//update disk map table
 			[DISK_MAP_TABLE + swap_pid*10 + i] = R0;
@@ -178,7 +176,6 @@ if (functionNum == SWAP_OUT) then
 
 	//paging status
 	[SYSTEM_STATUS_TABLE + 5] = 0;
-//breakpoint;
 	return;
 endif;
 
@@ -191,7 +188,7 @@ if (functionNum == SWAP_IN) then
 	high_tick = -1;
 	pid = 3;
 	while (pid < MAX_PROC_NUM) do
-		if (([PROCESS_TABLE + pid*16 + 6] == 1) && ([PROCESS_TABLE + pid*16 + 4] == READY)) then
+		if (([PROCESS_TABLE + pid*16 + 6] == 1) ) then
 			if ([PROCESS_TABLE + pid*16] > high_tick) then
 				high_tick = [PROCESS_TABLE + pid*16];
 				swap_pid = pid;
@@ -229,12 +226,12 @@ if (functionNum == SWAP_IN) then
 				flag = 1;
 			endif;
 			if (flag == 1) then
-//breakpoint;
-				multipush(R5,R6,R7,R8);
+
+				multipush(R2,R5,R6,R7,R8);
 				R1 = GET_FREE_PAGE;
 				call MOD_2;
-				multipop(R5,R6,R7,R8);
-//breakpoint;				
+				multipop(R2,R5,R6,R7,R8);
+				
 				backup;
 				R1 = DISK_LOAD;
 				R2 = curPID;
@@ -242,14 +239,14 @@ if (functionNum == SWAP_IN) then
 				R4 = [DISK_MAP_TABLE + swap_pid*10 + i];
 				call MOD_4;
 				restore;
-//breakpoint;
+
 				backup;
 				R1 = RELEASE_BLOCK;
 				R2 = [DISK_MAP_TABLE + swap_pid*10 + i];
 				R3 = curPID;
 				call MOD_2;
 				restore;
-//breakpoint;
+
 				//invalidate disk map table
 				[DISK_MAP_TABLE + swap_pid*10 + i] = -1;
 

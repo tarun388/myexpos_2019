@@ -91,10 +91,11 @@ int main()
   enddecl
 
   begin
+    
     x=initialize();
     semid=exposcall("Semget");
     pid=exposcall("Getpid");
-
+    
     if(pid==5) then
       file="temp1.dat";
     endif;

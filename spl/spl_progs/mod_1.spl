@@ -154,11 +154,6 @@ if  (functionNum == FREE_PAGE_TABLE) then
 			backup;
 			R1 = RELEASE_PAGE;
 			R2 = [page_table_base + i];
-			//backup;
-			//print("###");
-			//print(R2);
-			//print("###");
-			//restore;
 			call MOD_2;
 			restore;
 			[page_table_base + i] = -1;

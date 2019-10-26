@@ -47,7 +47,6 @@ endif;
 
 //update PTBR,PTLR,PID
 SP = [PROCESS_TABLE + new_pid*16 + 11] * 512 + [PROCESS_TABLE + new_pid*16 + 12];
-//breakpoint;
 PTBR = [PROCESS_TABLE + new_pid*16 + 14];
 PTLR = [PROCESS_TABLE + new_pid*16 + 15];
 [SYSTEM_STATUS_TABLE + 1] = new_pid;
