@@ -214,7 +214,8 @@ if (functionNum == KILL_ALL) then
 	pid = 2;
 	
 	while (pid < MAX_PROC_NUM) do
-		if ((pid != curPID) && ([PROCESS_TABLE + pid*16 + 4] != TERMINATED)) then
+
+		if ((pid != SWAPPER_DAEMON) && (pid != curPID) && ([PROCESS_TABLE + pid*16 + 4] != TERMINATED)) then
 			backup;
 			R1 = EXIT_PROCESS;
 			R2 = pid;
