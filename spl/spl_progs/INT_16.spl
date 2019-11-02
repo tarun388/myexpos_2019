@@ -204,7 +204,7 @@ if (sys_call_num == INT_SETPWD) then
 	//userid of process not equal to whom we want to change
 	if ([PROCESS_TABLE + curPID*16 + 3] != userid) then
 		//cur user not root
-		if (userid != 1) then
+		if ([SYSTEM_STATUS_TABLE] != 1) then
 			[retaddrs] = -1;
 			[PROCESS_TABLE + curPID*16 + 9] = 0;
 			SP = userSP;
