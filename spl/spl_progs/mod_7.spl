@@ -5,7 +5,7 @@
 
 //Exception Handler
 loadi(2,15);
-loadi(3,14);
+loadi(3,16);
 
 //Timer Interrupt Handler
 loadi(4,17);
@@ -276,8 +276,8 @@ while (i < 10) do
 
 endwhile;
 
-[DISK_MAP_TABLE + 20 + 4] = 9;
-[DISK_MAP_TABLE + 20 + 5] = 10;
+[DISK_MAP_TABLE + 20 + 4] = 67;
+[DISK_MAP_TABLE + 20 + 5] = 68;
 
 //-----------------------------------------------------------------------
 //------------------updating MEMORY_FREE_LIST-----------------------------
